@@ -116,7 +116,9 @@ export default function VoiceOverlay({ open, onClose }: Props) {
     setConversationHistory(newHistory);
     setBubbles([{ role: 'assistant', text: response.text }]);
 
-    speakAndThenListen(response.text, response.waitForInput);
+// Don't auto-speak greeting — mobile browsers block it
+// Just show text and wait for user to tap mic
+setListenState('waiting');
   };
 
   const processUserInput = async (userText: string) => {
