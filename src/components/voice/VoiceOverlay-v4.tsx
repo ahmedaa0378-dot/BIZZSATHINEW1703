@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { cn, formatINR } from '../../lib/utils';
 import { buildVoiceSystemPrompt, getVoiceResponse, type VoiceConversationMessage, type VoiceAIResponse } from '../../lib/openai';
+import { isWebSpeechSupported, WhisperRecorder } from '../../lib/whisper';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useProductStore } from '../../stores/productStore';
 import { useContactStore } from '../../stores/contactStore';
@@ -37,8 +38,10 @@ export default function VoiceOverlay({ open, onClose }: Props) {
   const [conversationHistory, setConversationHistory] = useState<VoiceConversationMessage[]>([]);
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState('');
+  const [useWhisper] = useState(() => !isWebSpeechSupported());
 
   const recognitionRef = useRef<any>(null);
+  const whisperRef = useRef<WhisperRecorder | null>(null);
   const timeoutRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef(true);
@@ -232,12 +235,71 @@ export default function VoiceOverlay({ open, onClose }: Props) {
     window.speechSynthesis.speak(utterance);
   };
 
-  // ===== SPEECH RECOGNITION =====
+  // ===== SPEECH RECOGNITION (Web Speech API or Whisper fallback) =====
   const startListening = () => {
+    if (useWhisper) {
+      startWhisperListening();
+    } else {
+      startWebSpeechListening();
+    }
+  };
+
+  // --- Whisper fallback (mobile / Safari / Firefox) ---
+  const startWhisperListening = async () => {
+    stopListening();
+
+    const recorder = new WhisperRecorder();
+    whisperRef.current = recorder;
+
+    recorder.onStateChange = (state) => {
+      if (!isMountedRef.current) return;
+      if (state === 'recording') setListenState('listening');
+      if (state === 'processing') setListenState('processing');
+    };
+
+    recorder.onInterim = (text) => {
+      if (isMountedRef.current) setInterimText(text);
+    };
+
+    try {
+      await recorder.startRecording(language);
+    } catch (err: any) {
+      setError(err.message);
+      setListenState('error');
+    }
+  };
+
+  const stopWhisperListening = async () => {
+    if (!whisperRef.current) return;
+
+    try {
+      const transcript = await whisperRef.current.stopRecording();
+      whisperRef.current = null;
+
+      if (isMountedRef.current) {
+        setInterimText('');
+        if (transcript.trim()) {
+          processUserInput(transcript.trim());
+        } else {
+          setListenState('waiting');
+        }
+      }
+    } catch (err: any) {
+      console.error('Whisper error:', err);
+      if (isMountedRef.current) {
+        setError('Could not understand. Please try again.');
+        setListenState('error');
+      }
+      whisperRef.current = null;
+    }
+  };
+
+  // --- Web Speech API (Chrome desktop/Android) ---
+  const startWebSpeechListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError('Speech recognition not supported. Try Chrome.');
-      setListenState('error');
+      // Should not happen since we checked, but just in case fall back to Whisper
+      startWhisperListening();
       return;
     }
 
@@ -259,11 +321,12 @@ export default function VoiceOverlay({ open, onClose }: Props) {
         finalTranscript = '';
       }
 
-      setTimeout(() => {
+      // Auto-stop after 10 seconds
+      timeoutRef.current = setTimeout(() => {
         if (recognitionRef.current) {
           try { recognitionRef.current.stop(); } catch {}
         }
-      }, 8000);
+      }, 10000);
     };
 
     recognition.onresult = (event: any) => {
@@ -280,13 +343,15 @@ export default function VoiceOverlay({ open, onClose }: Props) {
 
       if (newFinal) {
         finalTranscript += newFinal;
-        if (newFinal) {
-          setTimeout(() => {
-            if (recognitionRef.current) {
-              try { recognitionRef.current.stop(); } catch {}
-            }
-          }, 500);
-        }
+
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+        if (silenceTimer) clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch {}
+          }
+        }, 1500);
       }
 
       if (isMountedRef.current) {
@@ -315,7 +380,10 @@ export default function VoiceOverlay({ open, onClose }: Props) {
         if (event.error === 'no-speech') {
           setListenState('waiting');
         } else if (event.error === 'aborted') {
-          // Ignore aborted — happens when we manually stop
+          // Ignore
+        } else if (event.error === 'not-allowed') {
+          setError('Microphone permission denied. Please allow mic access in browser settings.');
+          setListenState('error');
         } else {
           setError(`Mic error: ${event.error}`);
           setListenState('error');
@@ -328,12 +396,13 @@ export default function VoiceOverlay({ open, onClose }: Props) {
       recognition.start();
     } catch (e) {
       console.error('Recognition start error:', e);
-      setListenState('error');
-      setError('Could not start microphone. Please try again.');
+      // Fall back to Whisper if Web Speech fails to start
+      startWhisperListening();
     }
   };
 
   const stopListening = () => {
+    // Stop Web Speech
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -342,11 +411,21 @@ export default function VoiceOverlay({ open, onClose }: Props) {
       try { recognitionRef.current.stop(); } catch {}
       recognitionRef.current = null;
     }
+    // Stop Whisper
+    if (whisperRef.current) {
+      whisperRef.current.cancel();
+      whisperRef.current = null;
+    }
   };
 
-  const handleMicTap = () => {
+  const handleMicTap = async () => {
     if (listenState === 'listening') {
-      stopListening();
+      if (useWhisper && whisperRef.current?.isRecording()) {
+        // For Whisper: stop recording and process
+        await stopWhisperListening();
+      } else {
+        stopListening();
+      }
     } else if (['waiting', 'idle', 'error'].includes(listenState)) {
       startListening();
     }
@@ -372,7 +451,7 @@ export default function VoiceOverlay({ open, onClose }: Props) {
                 listenState === 'speaking' ? 'text-blue-500' :
                 listenState === 'success' ? 'text-emerald-500' :
                 'text-emerald-500')}>
-                {listenState === 'listening' ? 'Listening...' :
+                {listenState === 'listening' ? (useWhisper ? 'Recording... tap to stop' : 'Listening...') :
                  listenState === 'processing' ? 'Thinking...' :
                  listenState === 'speaking' ? 'Speaking...' :
                  listenState === 'success' ? 'Done!' : 'Ready'}
@@ -436,7 +515,7 @@ export default function VoiceOverlay({ open, onClose }: Props) {
                 <Mic size={12} className="text-red-500" />
               </div>
               <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-red-500/10 rounded-tr-md">
-                <p className="text-sm text-neutral-700 dark:text-zinc-300 italic">{interimText}...</p>
+                <p className="text-sm text-neutral-700 dark:text-zinc-300 italic">{interimText}</p>
               </div>
             </div>
           )}
@@ -450,7 +529,11 @@ export default function VoiceOverlay({ open, onClose }: Props) {
             listenState === 'speaking' ? 'text-blue-500' :
             listenState === 'success' ? 'text-emerald-500' :
             'text-neutral-400 dark:text-zinc-600')}>
-            {listenState === 'listening' ? (language === 'hi' ? 'सुन रहा हूं... बोलिए' : 'Listening... speak now') :
+            {listenState === 'listening' ? (
+              useWhisper 
+                ? (language === 'hi' ? '🎙️ रिकॉर्डिंग... रोकने के लिए टैप करें' : '🎙️ Recording... tap to stop')
+                : (language === 'hi' ? 'सुन रहा हूं... बोलिए' : 'Listening... speak now')
+            ) :
              listenState === 'speaking' ? (language === 'hi' ? 'बोल रहा हूं...' : 'Speaking...') :
              listenState === 'processing' ? (language === 'hi' ? 'सोच रहा हूं...' : 'Thinking...') :
              listenState === 'success' ? '✓' :
@@ -485,6 +568,13 @@ export default function VoiceOverlay({ open, onClose }: Props) {
 
           {listenState === 'error' && (
             <p className="text-xs text-red-500 text-center">{error}</p>
+          )}
+
+          {/* Whisper mode indicator */}
+          {useWhisper && listenState !== 'error' && (
+            <p className="text-[10px] text-neutral-400 dark:text-zinc-600">
+              Using enhanced voice mode
+            </p>
           )}
         </div>
       </div>
