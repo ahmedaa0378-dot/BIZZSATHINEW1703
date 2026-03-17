@@ -2,6 +2,8 @@
 export { buildVoiceSystemPrompt, getVoiceResponse } from './openai-voice';
 export type { VoiceConversationMessage, VoiceAIResponse } from './openai-voice';
 
+import { BIZZSATHI_KNOWLEDGE_BASE } from './knowledge-base';
+
 // ========== CHATBOT ==========
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
@@ -74,54 +76,57 @@ LIVE DATA (always use these, NEVER say "I need data"):
 - Contacts: ${businessContext.topContacts || 'None'}
 - Recent: ${businessContext.recentTransactions}
 
-ACTION DETECTION — this is critical:
+${BIZZSATHI_KNOWLEDGE_BASE}
 
-When user mentions ANY of these, you MUST include ACTION_JSON at the end:
-- "sale 300" / "300 ki biki" / "sold sugar" / "income 500" → log_income
-- "kharcha 200" / "expense 200" / "rent 5000" / "petrol 500" → log_expense
-- "invoice banao" / "bill create" / "invoice for Ramesh" → create_invoice
-- "report dikhao" / "show report" → view_report
-- "stock check" / "stock dikhao" → check_stock
+YOU HAVE TWO MODES:
 
-FORMAT for actions — put this on the LAST line of your response:
+MODE 1 — BUSINESS ACTIONS (when user wants to DO something):
+- "sale 300" / "income 500" → include ACTION_JSON for log_income
+- "kharcha 200" / "expense 200" → include ACTION_JSON for log_expense
+- "invoice banao" → include ACTION_JSON for create_invoice
+- "report dikhao" → include ACTION_JSON for navigate to /reports
+- "stock check" → include ACTION_JSON for navigate to /stock
+
+ACTION_JSON format (put on LAST line):
 ACTION_JSON:{"type":"log_income","data":{"amount":300,"category":"Product Sales","description":"Sugar sale","payment_method":"Cash"},"label":"Log Rs 300 Income"}
+
+MODE 2 — HELP & KNOWLEDGE (when user asks "how to" or about features):
+- Answer using the KNOWLEDGE BASE above
+- Give short, step-by-step instructions (2-4 steps max)
+- Include navigation path: "Go to More → Business Profile"
+- If relevant, offer to do it for them: "Main aapke liye kar doon?"
+- For subscription questions, explain tiers clearly
 
 EXAMPLES:
 
+User: "invoice kaise banate hain?"
+Response: "Invoice banane ke liye: 1) Home page pe 'Invoice' button dabayein, 2) Customer select karein, 3) Items add karein with quantity aur rate, 4) Save karein. Chahein toh main abhi invoice form khol doon?"
+ACTION_JSON:{"type":"navigate","data":{"path":"/invoices/create"},"label":"Open Invoice Form"}
+
+User: "language kaise change karein?"
+Response: "Top header mein EN button hai, woh dabayein aur apni language select karein. Ya phir More → Preferences mein bhi change kar sakte hain."
+
+User: "Pro plan mein kya milta hai?"
+Response: "Pro plan mein: unlimited transactions, invoices, contacts, products. Saare 8 reports, unlimited voice aur chat, AI insights, WhatsApp notifications, online payments, 2 team members. Free mein sirf 50 transactions/month milte hain."
+
 User: "sale 300"
-Response: "Rs 300 ki sale log karoon? Cash mein?
-ACTION_JSON:{"type":"log_income","data":{"amount":300,"category":"Product Sales","description":"Sale","payment_method":"Cash"},"label":"Log Rs 300 Income"}"
-
-User: "500 kharcha delivery"
-Response: "Rs 500 delivery kharcha log kar deta hoon.
-ACTION_JSON:{"type":"log_expense","data":{"amount":500,"category":"Transport/Delivery","description":"Delivery charge","payment_method":"Cash"},"label":"Log Rs 500 Expense"}"
-
-User: "sugar sale 300 Ramesh ko"
-Response: "Ramesh ko sugar Rs 300 sale, cash mein. Log karoon?
-ACTION_JSON:{"type":"log_income","data":{"amount":300,"category":"Product Sales","description":"Sugar sale","contact_name":"Ramesh","payment_method":"Cash"},"label":"Log Rs 300 Income"}"
-
-User: "invoice banao Ramesh ke liye"
-Response: "Ramesh ke liye invoice open karta hoon.
-ACTION_JSON:{"type":"create_invoice","data":{"contact_name":"Ramesh"},"label":"Create Invoice for Ramesh"}"
+Response: "Rs 300 sale log karoon? Cash mein?"
+ACTION_JSON:{"type":"log_income","data":{"amount":300,"category":"Product Sales","description":"Sale","payment_method":"Cash"},"label":"Log Rs 300 Income"}
 
 User: "profit margin?"
-Response: "Is mahine ka profit Rs ${monthProfit.toLocaleString('en-IN')} hai. Margin ${monthMargin}% hai. Aaj ka profit Rs ${todayProfit.toLocaleString('en-IN')}."
-(NO action needed — just answer)
-
-User: "aaj ka summary"
-Response: "Aaj income Rs ${businessContext.todayIncome.toLocaleString('en-IN')}, kharcha Rs ${businessContext.todayExpense.toLocaleString('en-IN')}, profit Rs ${todayProfit.toLocaleString('en-IN')}. Cash in hand Rs ${businessContext.cashInHand.toLocaleString('en-IN')}."
-(NO action needed — just answer)
+Response: "Is mahine ka profit Rs ${monthProfit.toLocaleString('en-IN')} hai. Margin ${monthMargin}% hai."
 
 RULES:
-1. Keep responses under 3 sentences
+1. Keep responses under 3 sentences for actions, up to 5 for help/knowledge
 2. NEVER use LaTeX, markdown, bullet points, or code blocks
-3. NEVER show formulas — just CALCULATE and give the answer
-4. When amount is mentioned with sale/income context, ALWAYS include ACTION_JSON
-5. When amount is mentioned with expense context, ALWAYS include ACTION_JSON
-6. For queries (profit, balance, stock), just answer with real numbers
-7. Indian number format (12,34,567)
+3. NEVER show formulas — just calculate and give the answer
+4. For "how to" questions, give numbered steps in plain text (1, 2, 3 — not bullets)
+5. Include navigation paths like "More → Settings → Business Profile"
+6. When a user asks about a feature, offer to navigate them there with ACTION_JSON
+7. Indian number format (12,34,567), Rs symbol
 8. Default payment to "Cash" unless specified
-9. ACTION_JSON must be valid JSON on the last line, prefixed exactly with "ACTION_JSON:"`;
+9. ACTION_JSON must be valid JSON on the last line, prefixed with "ACTION_JSON:"
+10. If user asks something not in the knowledge base, say you don't know and suggest contacting support`;
 
   try {
     const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
@@ -132,7 +137,7 @@ RULES:
         model: 'gpt-4o',
         messages: [{ role: 'system', content: systemPrompt }, ...apiMessages.slice(-6)],
         temperature: 0.3,
-        max_tokens: 300,
+        max_tokens: 400,
         stream: !!onChunk,
       }),
     });
@@ -154,7 +159,6 @@ RULES:
               const parsed = JSON.parse(json);
               const delta = parsed.choices?.[0]?.delta?.content || '';
               fullText += delta;
-              // Don't show ACTION_JSON to user during streaming
               onChunk(fullText.split('ACTION_JSON:')[0].trim());
             } catch {}
           }
@@ -171,11 +175,10 @@ RULES:
 }
 
 function parseActionFromResponse(fullText: string): { text: string; action?: ChatAction } {
-  // Split on ACTION_JSON:
   const parts = fullText.split('ACTION_JSON:');
   let text = parts[0].trim();
 
-  // Clean any markdown/latex that slipped through
+  // Clean any markdown/latex
   text = text
     .replace(/\\\[[\s\S]*?\\\]/g, '')
     .replace(/\\\([\s\S]*?\\\)/g, '')
@@ -189,9 +192,7 @@ function parseActionFromResponse(fullText: string): { text: string; action?: Cha
   let action: ChatAction | undefined;
   if (parts[1]) {
     try {
-      // Clean the JSON string — sometimes AI adds extra text after
       let jsonStr = parts[1].trim();
-      // Find the end of the JSON object
       let braceCount = 0;
       let endIdx = 0;
       for (let i = 0; i < jsonStr.length; i++) {
