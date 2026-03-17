@@ -173,7 +173,7 @@ export default function HomePage() {
           <QuickAction icon={ArrowDownCircle} label={t('add_expense')} color="red"
             onClick={() => { setAddType('expense'); setShowAdd(true); }} />
           <QuickAction icon={FileText} label={t('create_invoice')} color="blue" onClick={() => navigate('/invoices/create')} />
-          <QuickAction icon={Package} label={t('check_stock')} color="amber" onClick={() => navigate('/stock')}
+          <QuickAction icon={Package} label={t('check_stock')} color="amber" onClick={() => navigate('/stock')} />
         </div>
 
         {/* === OUTSTANDING === */}
