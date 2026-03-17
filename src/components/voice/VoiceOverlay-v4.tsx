@@ -202,38 +202,75 @@ export default function VoiceOverlay({ open, onClose }: Props) {
   };
 
   // ===== SPEECH SYNTHESIS =====
-  const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = LANG_CODES[language] || 'en-IN';
-    utterance.rate = 0.9;
-    setListenState('speaking');
-    utterance.onend = () => {
-      if (isMountedRef.current) setListenState('waiting');
-    };
-    window.speechSynthesis.speak(utterance);
+const speakText = (text: string) => {
+  if (!('speechSynthesis' in window)) {
+    setListenState('waiting');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = LANG_CODES[language] || 'en-IN';
+  utterance.rate = 0.9;
+  setListenState('speaking');
+
+  // Fallback timeout — estimate 80ms per character
+  const fallbackMs = Math.max(3000, text.length * 80);
+  const fallbackTimer = setTimeout(() => {
+    if (isMountedRef.current && listenState === 'speaking') {
+      setListenState('waiting');
+    }
+  }, fallbackMs);
+
+  utterance.onend = () => {
+    clearTimeout(fallbackTimer);
+    if (isMountedRef.current) setListenState('waiting');
+  };
+  utterance.onerror = () => {
+    clearTimeout(fallbackTimer);
+    if (isMountedRef.current) setListenState('waiting');
   };
 
-  const speakAndThenListen = (text: string, shouldListen: boolean) => {
-    if (!('speechSynthesis' in window)) {
-      if (shouldListen) setTimeout(() => startListening(), 500);
-      return;
+  window.speechSynthesis.speak(utterance);
+};
+
+const speakAndThenListen = (text: string, shouldListen: boolean) => {
+  if (!('speechSynthesis' in window)) {
+    if (shouldListen) setTimeout(() => startListening(), 500);
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = LANG_CODES[language] || 'en-IN';
+  utterance.rate = 0.9;
+  setListenState('speaking');
+
+  const afterSpeak = () => {
+    if (isMountedRef.current && shouldListen) {
+      setTimeout(() => {
+        if (isMountedRef.current) startListening();
+      }, 400);
+    } else if (isMountedRef.current) {
+      setListenState('waiting');
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = LANG_CODES[language] || 'en-IN';
-    utterance.rate = 0.9;
-    setListenState('speaking');
-    utterance.onend = () => {
-      if (isMountedRef.current && shouldListen) {
-        setTimeout(() => {
-          if (isMountedRef.current) startListening();
-        }, 400);
-      }
-    };
-    window.speechSynthesis.speak(utterance);
   };
+
+  // Fallback timeout
+  const fallbackMs = Math.max(3000, text.length * 80);
+  const fallbackTimer = setTimeout(() => {
+    afterSpeak();
+  }, fallbackMs);
+
+  utterance.onend = () => {
+    clearTimeout(fallbackTimer);
+    afterSpeak();
+  };
+  utterance.onerror = () => {
+    clearTimeout(fallbackTimer);
+    afterSpeak();
+  };
+
+  window.speechSynthesis.speak(utterance);
+};
 
   // ===== SPEECH RECOGNITION (Web Speech API or Whisper fallback) =====
   const startListening = () => {
