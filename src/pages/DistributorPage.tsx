@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Search, Phone, MessageCircle, MapPin, Star,
   Filter, ChevronRight, X, Truck, Clock, Shield, Plus,
-  Loader2, Check, Navigation, Inbox, Building2,
+  Loader2, Check, Navigation, Inbox, Building2, LocateFixed,
+  ExternalLink, ArrowUpDown,
 } from 'lucide-react';
 import { cn, formatINR } from '../lib/utils';
 import { useDistributorStore, DISTRIBUTOR_CATEGORIES, type Distributor } from '../stores/distributorStore';
@@ -10,35 +11,154 @@ import { useAuthStore, useBusinessStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
 
+// Calculate distance between two coordinates (Haversine formula)
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)}m away`;
+  if (km < 10) return `${km.toFixed(1)}km away`;
+  return `${Math.round(km)}km away`;
+}
+
 export default function DistributorPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [selected, setSelected] = useState<Distributor | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [sortBy, setSortBy] = useState<'rating' | 'distance'>('rating');
+
+  // GPS
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
 
   const { distributors, fetchDistributors, loading } = useDistributorStore();
   const { business } = useBusinessStore();
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchDistributors(business?.city || '', category || undefined);
+    fetchDistributors('', category || undefined);
   }, [category]);
 
-  const filtered = distributors.filter((d) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      d.name.toLowerCase().includes(q) ||
-      d.products?.toLowerCase().includes(q) ||
-      d.categories.some((c) => c.toLowerCase().includes(q))
+  // Auto-detect location on mount
+  useEffect(() => {
+    detectLocation();
+  }, []);
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('GPS not available');
+      return;
+    }
+    setLocating(true);
+    setLocationError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLat(pos.coords.latitude);
+        setUserLng(pos.coords.longitude);
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) setLocationError('Location permission denied');
+        else setLocationError('Could not detect location');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
-  });
+  };
+
+  // Add distance to distributors and sort
+  const distributorsWithDistance = distributors
+    .filter((d) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.products?.toLowerCase().includes(q) ||
+        d.categories.some((c) => c.toLowerCase().includes(q))
+      );
+    })
+    .map((d) => ({
+      ...d,
+      distance: (userLat && userLng && d.latitude && d.longitude)
+        ? getDistanceKm(userLat, userLng, d.latitude, d.longitude)
+        : null,
+    }))
+    .sort((a, b) => {
+      if (sortBy === 'distance' && a.distance !== null && b.distance !== null) {
+        return a.distance - b.distance;
+      }
+      return b.rating - a.rating;
+    });
+
+  const openGoogleMaps = (query?: string) => {
+    const searchQuery = query || (category ? `${category} wholesaler` : 'wholesaler distributor');
+    const locationPart = userLat && userLng ? `@${userLat},${userLng},13z` : '';
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery + ' near me')}/${locationPart}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <PageWrapper>
       <Header title="Find Distributors" onBack={() => navigate(-1)} />
 
       <div className="px-4 pt-3 pb-24 space-y-4 animate-fade-in">
+
+        {/* Location Bar */}
+        <div className="glass-card p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center',
+              userLat ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-amber-50 dark:bg-amber-500/10')}>
+              {locating ? <Loader2 size={14} className="text-amber-500 animate-spin" /> :
+                userLat ? <LocateFixed size={14} className="text-emerald-500" /> :
+                <MapPin size={14} className="text-amber-500" />}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-neutral-900 dark:text-white">
+                {locating ? 'Detecting location...' :
+                  userLat ? 'Location detected' :
+                  locationError || 'Enable location for distance'}
+              </p>
+              {userLat && (
+                <p className="text-[10px] text-neutral-400 dark:text-zinc-600">
+                  Showing distance to distributors
+                </p>
+              )}
+            </div>
+          </div>
+          {!userLat && !locating && (
+            <button onClick={detectLocation}
+              className="px-3 py-1.5 rounded-lg bg-[#c8ee44]/10 text-[#8fb02e] dark:text-[#c8ee44] text-xs font-semibold">
+              Enable
+            </button>
+          )}
+        </div>
+
+        {/* Search on Google Maps */}
+        <button onClick={() => openGoogleMaps(search || category)}
+          className="w-full glass-card p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-all
+            border border-dashed border-neutral-300 dark:border-white/10">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+            <ExternalLink size={16} className="text-blue-500" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white">Search on Google Maps</p>
+            <p className="text-[10px] text-neutral-500 dark:text-zinc-500">
+              Find {category || 'wholesalers & distributors'} near you
+            </p>
+          </div>
+          <Navigation size={14} className="text-blue-500" />
+        </button>
 
         {/* Search */}
         <div className="glass-card flex items-center gap-3 px-4 py-3">
@@ -64,27 +184,49 @@ export default function DistributorPage() {
           ))}
         </div>
 
-        {/* Results count */}
-        <p className="text-xs text-neutral-400 dark:text-zinc-600">{filtered.length} distributors found</p>
+        {/* Sort + Results count */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-neutral-400 dark:text-zinc-600">
+            {distributorsWithDistance.length} distributors found
+          </p>
+          {userLat && (
+            <button onClick={() => setSortBy(sortBy === 'rating' ? 'distance' : 'rating')}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-white/5 text-xs font-semibold text-neutral-600 dark:text-zinc-400">
+              <ArrowUpDown size={12} />
+              {sortBy === 'rating' ? 'By Rating' : 'By Distance'}
+            </button>
+          )}
+        </div>
 
         {/* List */}
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 size={24} className="text-blue-500 animate-spin" />
+            <Loader2 size={24} className="text-[#c8ee44] animate-spin" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : distributorsWithDistance.length === 0 ? (
           <div className="glass-card p-8 flex flex-col items-center gap-3">
             <Building2 size={24} className="text-neutral-400 dark:text-zinc-600" />
             <p className="text-sm font-semibold text-neutral-900 dark:text-white">No distributors found</p>
-            <p className="text-xs text-neutral-500 dark:text-zinc-500 text-center">Try a different search or category</p>
+            <p className="text-xs text-neutral-500 dark:text-zinc-500 text-center">
+              Try searching on Google Maps or list your own distributor
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => openGoogleMaps()}
+                className="px-4 py-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                Search Google Maps
+              </button>
+              <button onClick={() => setShowAdd(true)}
+                className="px-4 py-2 rounded-xl bg-accent/10 text-[#8fb02e] dark:text-[#c8ee44] text-xs font-semibold">
+                Add Distributor
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map((dist) => (
+            {distributorsWithDistance.map((dist) => (
               <button key={dist.id} onClick={() => setSelected(dist)}
                 className="w-full glass-card p-4 text-left active:scale-[0.98] transition-all">
                 <div className="flex items-start gap-3">
-                  {/* Avatar */}
                   <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                     <Building2 size={20} className="text-blue-500" />
                   </div>
@@ -92,12 +234,9 @@ export default function DistributorPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{dist.name}</p>
-                      {dist.is_verified && (
-                        <Shield size={12} className="text-blue-500 flex-shrink-0" />
-                      )}
+                      {dist.is_verified && <Shield size={12} className="text-blue-500 flex-shrink-0" />}
                     </div>
 
-                    {/* Categories */}
                     <div className="flex gap-1 mt-1 flex-wrap">
                       {dist.categories.slice(0, 3).map((c, i) => (
                         <span key={i} className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-neutral-100 dark:bg-white/8 text-neutral-500 dark:text-zinc-400">
@@ -106,19 +245,30 @@ export default function DistributorPage() {
                       ))}
                     </div>
 
-                    {/* Rating + Location */}
                     <div className="flex items-center gap-3 mt-2">
                       <div className="flex items-center gap-1">
                         <Star size={12} className="text-amber-500 fill-amber-500" />
                         <span className="text-xs font-semibold text-neutral-900 dark:text-white">{dist.rating}</span>
                         <span className="text-[10px] text-neutral-400 dark:text-zinc-600">({dist.rating_count})</span>
                       </div>
-                      {dist.city && (
+
+                      {/* Distance badge */}
+                      {dist.distance !== null && (
+                        <div className="flex items-center gap-1">
+                          <Navigation size={10} className="text-blue-500" />
+                          <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                            {formatDistance(dist.distance)}
+                          </span>
+                        </div>
+                      )}
+
+                      {!dist.distance && dist.city && (
                         <div className="flex items-center gap-1">
                           <MapPin size={10} className="text-neutral-400" />
                           <span className="text-[10px] text-neutral-500 dark:text-zinc-500">{dist.city}</span>
                         </div>
                       )}
+
                       {dist.delivers && (
                         <div className="flex items-center gap-1">
                           <Truck size={10} className="text-emerald-500" />
@@ -134,6 +284,14 @@ export default function DistributorPage() {
             ))}
           </div>
         )}
+
+        {/* Tip card */}
+        <div className="glass-card p-4 border-l-[3px] border-l-blue-500">
+          <p className="text-xs text-neutral-600 dark:text-zinc-400">
+            <strong className="text-neutral-900 dark:text-white">Tip:</strong> Can't find your distributor? 
+            Search on Google Maps, then come back and add them here so others can find them too.
+          </p>
+        </div>
       </div>
 
       {/* FAB — List your business */}
@@ -149,6 +307,8 @@ export default function DistributorPage() {
         <DistributorDetail
           distributor={selected}
           onClose={() => setSelected(null)}
+          userLat={userLat}
+          userLng={userLng}
         />
       )}
 
@@ -161,7 +321,12 @@ export default function DistributorPage() {
 }
 
 // ========== DISTRIBUTOR DETAIL ==========
-function DistributorDetail({ distributor: d, onClose }: { distributor: Distributor; onClose: () => void }) {
+function DistributorDetail({ distributor: d, onClose, userLat, userLng }: {
+  distributor: Distributor & { distance?: number | null };
+  onClose: () => void;
+  userLat: number | null;
+  userLng: number | null;
+}) {
   const { rateDistributor } = useDistributorStore();
   const { user } = useAuthStore();
   const [myRating, setMyRating] = useState(0);
@@ -172,6 +337,18 @@ function DistributorDetail({ distributor: d, onClose }: { distributor: Distribut
     setMyRating(stars);
     const ok = await rateDistributor(d.id, user.id, stars);
     if (ok) setRated(true);
+  };
+
+  const getDirectionsUrl = () => {
+    if (d.latitude && d.longitude) {
+      return userLat && userLng
+        ? `https://www.google.com/maps/dir/${userLat},${userLng}/${d.latitude},${d.longitude}`
+        : `https://www.google.com/maps/?q=${d.latitude},${d.longitude}`;
+    }
+    if (d.address && d.city) {
+      return `https://www.google.com/maps/search/${encodeURIComponent(d.name + ' ' + d.address + ' ' + d.city)}`;
+    }
+    return `https://www.google.com/maps/search/${encodeURIComponent(d.name + ' ' + (d.city || ''))}`;
   };
 
   return (
@@ -204,6 +381,11 @@ function DistributorDetail({ distributor: d, onClose }: { distributor: Distribut
                     {d.is_verified && <Shield size={14} className="text-blue-500" />}
                   </div>
                   {d.contact_person && <p className="text-sm text-neutral-500 dark:text-zinc-400">{d.contact_person}</p>}
+                  {(d as any).distance != null && (
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
+                      {formatDistance((d as any).distance)} from you
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -231,12 +413,10 @@ function DistributorDetail({ distributor: d, onClose }: { distributor: Distribut
                     <MessageCircle size={14} /> WhatsApp
                   </a>
                 )}
-                {d.latitude && d.longitude && (
-                  <a href={`https://maps.google.com/?q=${d.latitude},${d.longitude}`} target="_blank" rel="noopener"
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
-                    <Navigation size={14} /> Directions
-                  </a>
-                )}
+                <a href={getDirectionsUrl()} target="_blank" rel="noopener"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                  <Navigation size={14} /> Directions
+                </a>
               </div>
             </div>
           </div>
@@ -338,7 +518,6 @@ function AddDistributorSheet({ onClose }: { onClose: () => void }) {
           <SmallInput label="Products" value={products} onChange={setProducts} placeholder="Rice, Dal, Sugar, Atta..." />
           <SmallInput label="Min Order (₹)" value={minOrder} onChange={setMinOrder} placeholder="5000" />
 
-          {/* Categories */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">Categories</label>
             <div className="flex gap-2 flex-wrap">
@@ -352,7 +531,6 @@ function AddDistributorSheet({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Delivers */}
           <div className="glass-card p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Truck size={16} className="text-neutral-500" />
