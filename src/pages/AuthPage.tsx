@@ -43,12 +43,14 @@ export default function AuthPage() {
 
     if (biz && biz.onboarding_completed) {
       setBusiness({
-        id: biz.id,
-        name: biz.business_name,
-        type: biz.business_type,
-        category: biz.business_category,
-        ownerName: biz.owner_name,
-      });
+  id: biz.id,
+  name: biz.business_name,
+  type: biz.business_type,
+  category: biz.business_category,
+  ownerName: biz.owner_name,
+  subscriptionTier: biz.subscription_tier || 'free',
+  trialEndsAt: biz.trial_ends_at || null,
+});
       setOnboarded(true);
       navigate('/');
     } else {
