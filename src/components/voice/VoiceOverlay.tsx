@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Mic, MicOff, X, Loader2, Check, Volume2, AlertCircle,
 } from 'lucide-react';
-import { cn, formatINR } from '../lib/utils';
-import { buildVoiceSystemPrompt, getVoiceResponse, type VoiceConversationMessage, type VoiceAIResponse } from '../lib/openai';
-import { isWebSpeechSupported, WhisperRecorder } from '../lib/whisper';
+import { cn, formatINR } from '../../lib/utils';
+import { buildVoiceSystemPrompt, getVoiceResponse, type VoiceConversationMessage, type VoiceAIResponse } from '../../lib/openai';
+import { isWebSpeechSupported, WhisperRecorder } from '../../lib/whisper';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useProductStore } from '../../stores/productStore';
 import { useContactStore } from '../../stores/contactStore';
