@@ -318,6 +318,13 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
         }}
         defaultType={addType}
       />
+    <PaywallModal
+  open={paywallInfo.open}
+  onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
+  limitType={paywallInfo.type}
+  current={paywallInfo.current}
+  max={paywallInfo.max}
+/>
     </>
   );
 }
