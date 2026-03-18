@@ -206,27 +206,37 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
           </div>
         </div>
 
-        {/* === AI INSIGHTS (still static for now) === */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-accent" />
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">{t('ai_insights')}</h2>
-            </div>
-            <button className="text-xs font-semibold text-[#9abf2a]">{t('view_all')}</button>
+{/* === AI INSIGHTS === */}
+{insights.length > 0 && (
+  <div>
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <Sparkles size={18} className="text-accent" />
+        <h2 className="text-base font-semibold text-neutral-900 dark:text-white">{t('ai_insights')}</h2>
+      </div>
+      <button onClick={() => navigate('/insights')} className="text-xs font-semibold text-[#9abf2a]">{t('view_all')}</button>
+    </div>
+    <div className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory -mx-4 px-4">
+      {insights.slice(0, 5).map((item) => (
+        <div key={item.id} className="accent-card p-4 min-w-[240px] snap-start flex-shrink-0">
+          <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3',
+            item.severity === 'critical' ? 'bg-red-500/10' :
+            item.severity === 'warning' ? 'bg-amber-500/10' :
+            item.severity === 'opportunity' ? 'bg-emerald-500/10' :
+            'bg-blue-500/10')}>
+            <Sparkles size={18} className={
+              item.severity === 'critical' ? 'text-red-500' :
+              item.severity === 'warning' ? 'text-amber-500' :
+              item.severity === 'opportunity' ? 'text-emerald-500' :
+              'text-blue-500'} />
           </div>
-          <div className="flex gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory -mx-4 px-4">
-            {INSIGHTS.map((item, i) => (
-              <div key={i} className="accent-card p-4 min-w-[240px] snap-start flex-shrink-0">
-                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3', item.bg)}>
-                  <item.icon size={18} className={item.color} />
-                </div>
-                <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-0.5">{item.title}</p>
-                <p className="text-xs text-neutral-500 dark:text-zinc-500">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-0.5">{item.title}</p>
+          <p className="text-xs text-neutral-500 dark:text-zinc-500">{item.description}</p>
         </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* === RECENT TRANSACTIONS === */}
         <div>
