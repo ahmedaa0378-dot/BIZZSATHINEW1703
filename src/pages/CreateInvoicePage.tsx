@@ -68,7 +68,7 @@ export default function CreateInvoicePage() {
     if (business && customerState) {
       // Compare business state with customer state
       const bizState = (business as any).state || '';
-      const interstate = bizState && customerState && bizState.toLowerCase() !== customerState.toLowerCase();
+      const interstate = !!(bizState && customerState && bizState.toLowerCase() !== customerState.toLowerCase());
       setIsInterstate(interstate);
     }
   }, [customerState, business]);
