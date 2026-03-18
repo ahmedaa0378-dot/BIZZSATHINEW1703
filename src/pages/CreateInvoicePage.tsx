@@ -10,6 +10,8 @@ import { useContactStore } from '../stores/contactStore';
 import { useBusinessStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
+import { usePaywall } from '../lib/paywall';
+import PaywallModal from '../components/shared/PaywallModal';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi',
@@ -31,6 +33,8 @@ export default function CreateInvoicePage() {
   const { createInvoice, getNextNumber, loading } = useInvoiceStore();
   const { contacts, fetchContacts } = useContactStore();
   const { business } = useBusinessStore();
+  const { check } = usePaywall();
+  const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
 
   // Step 1 — Customer
   const [contactId, setContactId] = useState<string | null>(null);
@@ -119,6 +123,12 @@ export default function CreateInvoicePage() {
 
   const handleCreate = async () => {
     if (!business) return;
+
+    const result = await check('invoice');
+    if (!result.allowed) {
+      setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'invoice' });
+      return;
+    }
 
     const invoice = await createInvoice({
       business_id: business.id,
@@ -494,6 +504,13 @@ export default function CreateInvoicePage() {
             </button>
           </div>
         </div>
+    <PaywallModal
+      open={paywallInfo.open}
+      onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
+      limitType={paywallInfo.type}
+      current={paywallInfo.current}
+      max={paywallInfo.max}
+    />
     </PageWrapper>
   );
 }
