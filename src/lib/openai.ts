@@ -122,7 +122,7 @@ RULES:
 }
 
 function parseActionFromResponse(fullText: string): { text: string; action?: ChatAction } {
-  const parts = fullText.split('ACTION_JSON:');
+  const parts = fullText.split(/ACTION_JSON:?/);
   let text = parts[0].trim();
 
   text = text
