@@ -183,7 +183,15 @@ const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0
 
       {/* Floating Add Button */}
       <button
-        onClick={() => { setDefaultType('expense'); setShowAdd(true); }}
+        onClick={async () => {
+          const result = await check('transaction');
+          if (!result.allowed) {
+            setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'transaction' });
+            return;
+          }
+          setDefaultType('expense');
+          setShowAdd(true);
+        }}
         className="fixed z-40 w-12 h-12 rounded-full
           bg-accent text-black flex items-center justify-center
           shadow-glow-green active:scale-95 transition-transform"
@@ -203,6 +211,13 @@ const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0
           if (business?.id) fetchTransactions(business.id);
         }}
         defaultType={defaultType}
+      />
+      <PaywallModal
+        open={paywallInfo.open}
+        onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
+        limitType={paywallInfo.type}
+        current={paywallInfo.current}
+        max={paywallInfo.max}
       />
     </>
   );
