@@ -50,6 +50,9 @@ export default function TransactionsPage() {
   const { t } = useTranslation();
   const { transactions, fetchTransactions, loading } = useTransactionStore();
   const { business } = useBusinessStore();
+  const { check } = usePaywall();
+const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
+
 
   useEffect(() => {
     if (business?.id) {
