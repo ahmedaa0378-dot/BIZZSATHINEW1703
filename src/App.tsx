@@ -102,7 +102,7 @@ export default function App() {
           // Check if onboarded
           const { data: biz } = await supabase
             .from('businesses')
-            .select('id, business_name, business_type, business_category, owner_name, onboarding_completed')
+            .select('id, business_name, business_type, business_category, owner_name, onboarding_completed, subscription_tier, trial_ends_at')
             .eq('owner_id', session.user.id)
             .single();
 
