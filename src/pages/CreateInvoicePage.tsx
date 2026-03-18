@@ -53,7 +53,11 @@ export default function CreateInvoicePage() {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [terms, setTerms] = useState('Payment due within 30 days');
+  const [terms, setTerms] = useState( 
+    `1. Payment is due within 30 days of invoice date. 
+     2. Goods once sold will not be taken back or exchanged. 
+     3. Interest @ 2% per month will be charged on overdue payments. 
+     4. All disputes are subject to local jurisdiction.` );
 
   // Init
   useEffect(() => {
