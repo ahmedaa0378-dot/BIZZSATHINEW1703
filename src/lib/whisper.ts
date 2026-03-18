@@ -1,7 +1,7 @@
 // Whisper-based speech-to-text fallback for browsers without Web Speech API
-// Works on Safari iOS, Firefox, and all mobile browsers
+// Routes through Supabase Edge Function — no API key in browser
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+import { proxyWhisper } from './api-proxy';
 
 export function isWebSpeechSupported(): boolean {
   return !!(
@@ -21,7 +21,7 @@ export class WhisperRecorder {
   async startRecording(language: string = 'hi'): Promise<void> {
     try {
       this.audioChunks = [];
-      this.stream = await navigator.mediaDevices.getUserMedia({ 
+      this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
           sampleRate: 16000,
@@ -30,8 +30,7 @@ export class WhisperRecorder {
         }
       });
 
-      // Use webm if available, fall back to mp4
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/mp4')
         ? 'audio/mp4'
@@ -45,11 +44,10 @@ export class WhisperRecorder {
         }
       };
 
-      this.mediaRecorder.start(250); // Collect data every 250ms
+      this.mediaRecorder.start(250);
       this.onStateChange?.('recording');
       this.onInterim?.('🎙️ Recording...');
 
-      // Auto-stop after 15 seconds
       this.timeoutId = setTimeout(() => {
         this.stopRecording();
       }, 15000);
@@ -57,7 +55,7 @@ export class WhisperRecorder {
     } catch (err: any) {
       console.error('Microphone access error:', err);
       throw new Error(
-        err.name === 'NotAllowedError' 
+        err.name === 'NotAllowedError'
           ? 'Microphone permission denied. Please allow mic access.'
           : 'Could not access microphone. Please try again.'
       );
@@ -82,18 +80,18 @@ export class WhisperRecorder {
         this.onInterim?.('Processing...');
 
         try {
-          const audioBlob = new Blob(this.audioChunks, { 
-            type: this.mediaRecorder?.mimeType || 'audio/webm' 
+          const audioBlob = new Blob(this.audioChunks, {
+            type: this.mediaRecorder?.mimeType || 'audio/webm'
           });
 
-          // Skip if too small (likely empty recording)
           if (audioBlob.size < 1000) {
             this.cleanup();
             resolve('');
             return;
           }
 
-          const transcript = await this.transcribeWithWhisper(audioBlob);
+          // Use proxy instead of direct API call
+          const transcript = await proxyWhisper(audioBlob, 'hi');
           this.cleanup();
           resolve(transcript);
         } catch (err) {
@@ -104,40 +102,6 @@ export class WhisperRecorder {
 
       this.mediaRecorder.stop();
     });
-  }
-
-  private async transcribeWithWhisper(audioBlob: Blob): Promise<string> {
-    if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    // Determine file extension from mime type
-    const ext = audioBlob.type.includes('webm') ? 'webm' 
-      : audioBlob.type.includes('mp4') ? 'mp4' 
-      : 'wav';
-
-    const formData = new FormData();
-    formData.append('file', audioBlob, `recording.${ext}`);
-    formData.append('model', 'whisper-1');
-    formData.append('language', 'hi'); // Hindi + English mixed works well with Hindi setting
-    formData.append('response_format', 'text');
-
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Whisper API error:', errText);
-      throw new Error('Transcription failed');
-    }
-
-    const text = await res.text();
-    return text.trim();
   }
 
   cancel(): void {
