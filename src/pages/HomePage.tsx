@@ -83,6 +83,7 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
       fetchTransactions(business.id);
       fetchCategories(business.id);
       fetchPaymentMethods(business.id);
+      fetchInsights(business.id);
       fetchCashInHand(business.id);
     }
   }, [business?.id]);
