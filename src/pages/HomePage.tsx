@@ -13,6 +13,7 @@ import { useBusinessStore } from '../stores/appStore';
 import AddTransactionModal from '../components/transactions/AddTransactionModal';
 import { usePaywall } from '../lib/paywall';
 import PaywallModal from '../components/shared/PaywallModal';
+import { useInsightsStore } from '../stores/insightsStore';
 import { useTranslation } from '../lib/i18n';
 
 type Period = 'today' | 'week' | 'month';
