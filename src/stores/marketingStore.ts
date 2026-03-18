@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { proxyChat } from '../lib/api-proxy';
 
 export interface MarketingPost {
   id: string;
@@ -66,7 +67,6 @@ export const useMarketingStore = create<MarketingStore>((set, get) => ({
 
     if (data) {
       set({ festivals: data as Festival[] });
-      // Upcoming = within next 15 days
       const fifteenDays = new Date();
       fifteenDays.setDate(fifteenDays.getDate() + 15);
       const upcoming = (data as Festival[]).filter((f) => new Date(f.date) <= fifteenDays);
@@ -122,7 +122,7 @@ export const TONES = [
   { value: 'festive', label: 'Festive' },
 ];
 
-// AI Caption Generator
+// AI Caption Generator — uses proxy
 export async function generateCaption(
   postType: string,
   productName: string,
@@ -131,37 +131,24 @@ export async function generateCaption(
   language: string,
   businessName: string
 ): Promise<string> {
-  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-  if (!OPENAI_API_KEY) return 'OpenAI API key not configured.';
-
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{
-          role: 'system',
-          content: `You are a social media caption writer for Indian small businesses.
+    const data = await proxyChat([
+      {
+        role: 'system',
+        content: `You are a social media caption writer for Indian small businesses.
 Business: ${businessName}
 Write a ${tone} social media caption for a ${postType.replace('_', ' ')} post.
 Language: ${language === 'hi' ? 'Hindi/Hinglish' : language === 'en' ? 'English' : 'Mix'}
 Include emojis and 3-5 relevant hashtags.
 Keep it under 200 words. Make it engaging and shareable.
 DO NOT use markdown formatting. Just plain text.`
-        }, {
-          role: 'user',
-          content: `Product/Offer: ${productName}\nDetails: ${details}`
-        }],
-        temperature: 0.8,
-        max_tokens: 300,
-      }),
-    });
+      },
+      {
+        role: 'user',
+        content: `Product/Offer: ${productName}\nDetails: ${details}`
+      }
+    ], { temperature: 0.8, max_tokens: 300 });
 
-    const data = await res.json();
     return data.choices?.[0]?.message?.content || 'Could not generate caption.';
   } catch {
     return 'Error generating caption. Please try again.';
