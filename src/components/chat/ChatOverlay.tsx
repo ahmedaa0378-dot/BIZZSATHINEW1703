@@ -4,8 +4,8 @@ import {
   ArrowUpCircle, ArrowDownCircle, FileText, BarChart3,
   ExternalLink, Package, UserPlus, DollarSign, TrendingUp,
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { sendChatMessage, type ChatMessage, type ChatAction } from '../../lib/openai';
+import { cn } from '../lib/utils';
+import { sendChatMessage, type ChatMessage, type ChatAction } from '../lib/openai';
 import { useTransactionStore } from '../../stores/transactionStore';
 import { useProductStore } from '../../stores/productStore';
 import { useInvoiceStore } from '../../stores/invoiceStore';
