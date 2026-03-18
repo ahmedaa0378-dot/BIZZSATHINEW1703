@@ -3,11 +3,9 @@ export { buildVoiceSystemPrompt, getVoiceResponse } from './openai-voice';
 export type { VoiceConversationMessage, VoiceAIResponse } from './openai-voice';
 
 import { BIZZSATHI_KNOWLEDGE_BASE } from './knowledge-base';
+import { proxyChat, proxyChatStream } from './api-proxy';
 
 // ========== CHATBOT ==========
-
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-const API_URL = 'https://api.openai.com/v1/chat/completions';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -52,10 +50,6 @@ export async function sendChatMessage(
   },
   onChunk?: (text: string) => void
 ): Promise<{ text: string; action?: ChatAction }> {
-  if (!OPENAI_API_KEY) {
-    return { text: 'OpenAI API key not configured.' };
-  }
-
   const langInstruction = getLangInstruction(businessContext.language);
   const todayProfit = businessContext.todayIncome - businessContext.todayExpense;
   const monthProfit = businessContext.monthIncome - businessContext.monthExpense;
@@ -97,25 +91,6 @@ MODE 2 — HELP & KNOWLEDGE (when user asks "how to" or about features):
 - If relevant, offer to do it for them: "Main aapke liye kar doon?"
 - For subscription questions, explain tiers clearly
 
-EXAMPLES:
-
-User: "invoice kaise banate hain?"
-Response: "Invoice banane ke liye: 1) Home page pe 'Invoice' button dabayein, 2) Customer select karein, 3) Items add karein with quantity aur rate, 4) Save karein. Chahein toh main abhi invoice form khol doon?"
-ACTION_JSON:{"type":"navigate","data":{"path":"/invoices/create"},"label":"Open Invoice Form"}
-
-User: "language kaise change karein?"
-Response: "Top header mein EN button hai, woh dabayein aur apni language select karein. Ya phir More → Preferences mein bhi change kar sakte hain."
-
-User: "Pro plan mein kya milta hai?"
-Response: "Pro plan mein: unlimited transactions, invoices, contacts, products. Saare 8 reports, unlimited voice aur chat, AI insights, WhatsApp notifications, online payments, 2 team members. Free mein sirf 50 transactions/month milte hain."
-
-User: "sale 300"
-Response: "Rs 300 sale log karoon? Cash mein?"
-ACTION_JSON:{"type":"log_income","data":{"amount":300,"category":"Product Sales","description":"Sale","payment_method":"Cash"},"label":"Log Rs 300 Income"}
-
-User: "profit margin?"
-Response: "Is mahine ka profit Rs ${monthProfit.toLocaleString('en-IN')} hai. Margin ${monthMargin}% hai."
-
 RULES:
 1. Keep responses under 3 sentences for actions, up to 5 for help/knowledge
 2. NEVER use LaTeX, markdown, bullet points, or code blocks
@@ -130,43 +105,15 @@ RULES:
 
   try {
     const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{ role: 'system', content: systemPrompt }, ...apiMessages.slice(-6)],
-        temperature: 0.3,
-        max_tokens: 400,
-        stream: !!onChunk,
-      }),
-    });
+    const allMessages = [{ role: 'system', content: systemPrompt }, ...apiMessages.slice(-6)];
 
     if (onChunk) {
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter((l) => l.startsWith('data: '));
-          for (const line of lines) {
-            const json = line.replace('data: ', '').trim();
-            if (json === '[DONE]') break;
-            try {
-              const parsed = JSON.parse(json);
-              const delta = parsed.choices?.[0]?.delta?.content || '';
-              fullText += delta;
-              onChunk(fullText.split('ACTION_JSON:')[0].trim());
-            } catch {}
-          }
-        }
-      }
+      const fullText = await proxyChatStream(allMessages, (text) => {
+        onChunk(text.split('ACTION_JSON:')[0].trim());
+      }, { temperature: 0.3, max_tokens: 400 });
       return parseActionFromResponse(fullText);
     } else {
-      const data = await res.json();
+      const data = await proxyChat(allMessages, { temperature: 0.3, max_tokens: 400 });
       return parseActionFromResponse(data.choices?.[0]?.message?.content || '');
     }
   } catch (err) {
@@ -178,7 +125,6 @@ function parseActionFromResponse(fullText: string): { text: string; action?: Cha
   const parts = fullText.split('ACTION_JSON:');
   let text = parts[0].trim();
 
-  // Clean any markdown/latex
   text = text
     .replace(/\\\[[\s\S]*?\\\]/g, '')
     .replace(/\\\([\s\S]*?\\\)/g, '')
