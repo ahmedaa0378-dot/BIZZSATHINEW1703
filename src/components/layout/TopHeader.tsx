@@ -22,7 +22,7 @@ export default function TopHeader() {
       {/* Logo Text */}
       <div className="flex items-baseline gap-0.5">
         <span className="text-[20px] font-extrabold tracking-tight text-neutral-900 dark:text-white">
-          Biz<span className="text-[#8fb02e] dark:text-[#c8ee44]">Saathi</span>
+          Bizz<span className="text-[#8fb02e] dark:text-[#c8ee44]">Sathi</span>
         </span>
       </div>
 
