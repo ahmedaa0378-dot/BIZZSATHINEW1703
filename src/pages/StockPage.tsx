@@ -6,6 +6,8 @@ import { useBusinessStore } from '../stores/appStore';
 import AddProductModal from '../components/stock/AddProductModal';
 import StockAdjustModal from '../components/stock/StockAdjustModal';
 import { useTranslation } from '../lib/i18n';
+import { usePaywall } from '../lib/paywall';
+import PaywallModal from '../components/shared/PaywallModal';
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; text: string; bg: string }> = {
   in_stock: { label: 'In Stock', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
@@ -27,6 +29,8 @@ export default function StockPage() {
   const { t } = useTranslation();
   const { products, summary, categories, fetchProducts, fetchSummary, deleteProduct } = useProductStore();
   const { business } = useBusinessStore();
+  const { check } = usePaywall();
+  const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
 
   useEffect(() => {
     if (business?.id) {
@@ -140,7 +144,14 @@ export default function StockPage() {
               {search ? 'Try different search' : 'Add your first product to track inventory'}
             </p>
             {!search && (
-              <button onClick={() => setShowAdd(true)}
+              <button onClick={async () => {
+                  const result = await check('product');
+                  if (!result.allowed) {
+                    setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'product' });
+                    return;
+                  }
+                  setShowAdd(true);
+                }}
                 className="mt-1 px-5 py-2 rounded-xl bg-accent text-black text-xs font-semibold active:scale-95 transition-transform">
                 + Add Product
               </button>
@@ -207,7 +218,15 @@ export default function StockPage() {
       </div>
 
       {/* FAB */}
-      <button onClick={() => { setEditProduct(null); setShowAdd(true); }}
+      <button onClick={async () => {
+        const result = await check('product');
+        if (!result.allowed) {
+          setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'product' });
+          return;
+        }
+        setEditProduct(null);
+        setShowAdd(true);
+      }}
         className="fixed z-40 w-12 h-12 rounded-full bg-accent text-black flex items-center justify-center
           shadow-glow-green active:scale-95 transition-transform"
         style={{ bottom: 'calc(68px + env(safe-area-inset-bottom, 0px) + 24px)', left: '16px' }}>
@@ -219,6 +238,14 @@ export default function StockPage() {
         open={showAdd}
         onClose={() => { setShowAdd(false); setEditProduct(null); refreshData(); }}
         editProduct={editProduct}
+      />
+
+      <PaywallModal
+        open={paywallInfo.open}
+        onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
+        limitType={paywallInfo.type}
+        current={paywallInfo.current}
+        max={paywallInfo.max}
       />
 
       {/* Stock Adjust */}
