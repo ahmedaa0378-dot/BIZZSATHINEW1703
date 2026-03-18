@@ -8,6 +8,8 @@ import { formatINR, cn } from '../lib/utils';
 import { useTransactionStore } from '../stores/transactionStore';
 import { useBusinessStore } from '../stores/appStore';
 import AddTransactionModal from '../components/transactions/AddTransactionModal';
+import { usePaywall } from '../lib/paywall';
+import PaywallModal from '../components/shared/PaywallModal';
 import { useTranslation } from '../lib/i18n';
 
 type Filter = 'all' | 'income' | 'expense';
