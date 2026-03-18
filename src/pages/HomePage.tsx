@@ -53,12 +53,6 @@ function getCategoryIcon(name: string) {
   return CATEGORY_ICONS[name] || Receipt;
 }
 
-const INSIGHTS = [
-  { icon: Zap, title: 'Transport costs up 35%', desc: 'Compared to last month', color: 'text-amber-500', bg: 'bg-amber-500/10 dark:bg-amber-500/15' },
-  { icon: DollarSign, title: 'Best selling: Tata Salt', desc: 'Average 40 units/week', color: 'text-emerald-500', bg: 'bg-emerald-500/10 dark:bg-emerald-500/15' },
-  { icon: Lightbulb, title: 'Festival opportunity', desc: 'Holi is in 5 days!', color: 'text-violet-500', bg: 'bg-violet-500/10 dark:bg-violet-500/15' },
-];
-
 export default function HomePage() {
   const [period, setPeriod] = useState<Period>('today');
   const [showAdd, setShowAdd] = useState(false);
