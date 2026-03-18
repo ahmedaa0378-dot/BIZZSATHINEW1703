@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import {
   Search, Plus, FileText, ArrowLeft, ChevronRight,
   Clock, CheckCircle, AlertCircle, Send, XCircle, Inbox,
-  MoreVertical, Eye, Trash2,
+  MoreVertical, Eye, Trash2, Download, MessageCircle, Loader2,
 } from 'lucide-react';
 import { cn, formatINR, formatDate } from '../lib/utils';
 import { useInvoiceStore, type Invoice } from '../stores/invoiceStore';
 import { useBusinessStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
+import { generateInvoicePDF, downloadInvoicePDF, shareInvoiceWhatsApp } from '../lib/invoice-pdf';
+import { supabase } from '../lib/supabase';
 
 type Filter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
@@ -24,9 +26,9 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof Clock; color: 
 export default function InvoicesPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
-  const { invoices, fetchInvoices, updateInvoiceStatus, deleteInvoice } = useInvoiceStore();
+  const { invoices, fetchInvoices, updateInvoiceStatus, deleteInvoice, getInvoice } = useInvoiceStore();
   const { business } = useBusinessStore();
   const navigate = useNavigate();
 
@@ -51,14 +53,58 @@ export default function InvoicesPage() {
 
   const handleStatusChange = async (id: string, status: string) => {
     await updateInvoiceStatus(id, status);
-    setMenuOpen(null);
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Delete this invoice?')) {
       await deleteInvoice(id);
-      setMenuOpen(null);
     }
+  };
+
+  const getBusinessInfo = async () => {
+    if (!business?.id) return { name: 'BizzSathi', ownerName: '' };
+    const { data } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('id', business.id)
+      .single();
+
+    if (!data) return { name: business.name || '', ownerName: business.ownerName || '' };
+    return {
+      name: data.business_name || '',
+      ownerName: data.owner_name || '',
+      address: data.address_line1 || '',
+      city: data.city || '',
+      state: data.state || '',
+      pincode: data.pincode || '',
+      gstin: data.gstin || '',
+      phone: '', // from user profile if needed
+      email: '',
+      upiId: data.upi_id || '',
+      bankAccountName: data.bank_account_name || '',
+      bankAccountNumber: data.bank_account_number || '',
+      bankIfsc: data.bank_ifsc || '',
+    };
+  };
+
+  const handleDownloadPDF = async (inv: Invoice) => {
+    setDownloading(inv.id);
+    try {
+      const fullInvoice = await getInvoice(inv.id);
+      if (!fullInvoice) { setDownloading(null); return; }
+
+      const bizInfo = await getBusinessInfo();
+      const blob = await generateInvoicePDF(fullInvoice, fullInvoice.items || [], bizInfo);
+      downloadInvoicePDF(blob, inv.invoice_number);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert('Could not generate PDF. Please try again.');
+    }
+    setDownloading(null);
+  };
+
+  const handleShareWhatsApp = async (inv: Invoice) => {
+    shareInvoiceWhatsApp(inv);
   };
 
   return (
@@ -131,15 +177,15 @@ export default function InvoicesPage() {
             {filtered.map((inv) => {
               const sc = STATUS_CONFIG[inv.status] || STATUS_CONFIG.draft;
               const StatusIcon = sc.icon;
+              const isDownloading = downloading === inv.id;
+
               return (
                 <div key={inv.id} className="glass-card p-4 relative">
                   <div className="flex items-start gap-3">
-                    {/* Icon */}
                     <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                       <FileText size={18} className="text-blue-500" />
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className="text-sm font-bold text-neutral-900 dark:text-white">{inv.invoice_number}</p>
@@ -155,7 +201,6 @@ export default function InvoicesPage() {
                       </p>
                     </div>
 
-                    {/* Amount + Menu */}
                     <div className="text-right flex-shrink-0">
                       <p className="text-base font-bold tabular-nums text-neutral-900 dark:text-white">{formatINR(Number(inv.grand_total))}</p>
                       {Number(inv.balance_due) > 0 && inv.status !== 'paid' && (
@@ -166,6 +211,20 @@ export default function InvoicesPage() {
 
                   {/* Quick Actions */}
                   <div className="flex gap-2 mt-3 pt-3 border-t border-neutral-100 dark:border-white/5">
+                    {/* Download PDF */}
+                    <button onClick={() => handleDownloadPDF(inv)} disabled={isDownloading}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 text-[#8fb02e] dark:text-[#c8ee44] text-xs font-semibold disabled:opacity-50">
+                      {isDownloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                      PDF
+                    </button>
+
+                    {/* WhatsApp Share */}
+                    <button onClick={() => handleShareWhatsApp(inv)}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                      <MessageCircle size={12} /> Share
+                    </button>
+
+                    {/* Status actions */}
                     {inv.status === 'draft' && (
                       <button onClick={() => handleStatusChange(inv.id, 'sent')}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
@@ -178,6 +237,8 @@ export default function InvoicesPage() {
                         <CheckCircle size={12} /> Mark Paid
                       </button>
                     )}
+
+                    {/* Delete */}
                     <button onClick={() => handleDelete(inv.id)}
                       className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 text-xs font-semibold">
                       <Trash2 size={12} />
