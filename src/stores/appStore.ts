@@ -25,6 +25,8 @@ interface BusinessStore {
     type: string;
     category: string;
     ownerName: string;
+    subscriptionTier: string;
+    trialEndsAt: string | null;
   };
   setBusiness: (b: BusinessStore['business']) => void;
 }
