@@ -1,6 +1,6 @@
 import { Home, ArrowUpDown, Package, Menu } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import { cn } from '../lib/utils';
 import { useTranslation } from '../lib/i18n';
 
 export default function BottomTabBar() {
