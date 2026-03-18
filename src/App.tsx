@@ -9,7 +9,7 @@ import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
 import { useThemeStore, applyTheme } from './stores/themeStore';
 import { useAuthStore, useBusinessStore } from './stores/appStore';
-import { supabase } from './lib/supabase';
+import { supabase } from "./components/lib/supabase";
 import ContactsPage from './pages/ContactsPage';
 import InvoicesPage from './pages/InvoicesPage';
 import CreateInvoicePage from './pages/CreateInvoicePage';
