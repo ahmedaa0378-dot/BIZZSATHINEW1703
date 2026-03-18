@@ -25,6 +25,7 @@ import TeamPage from './pages/TeamPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentsPage from './pages/PaymentsPage';
 import WhatsAppPage from './pages/WhatsAppPage';
+import LegalPage from './pages/LegalPage';
 import { Loader2 } from 'lucide-react';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
