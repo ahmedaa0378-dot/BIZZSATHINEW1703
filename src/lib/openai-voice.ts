@@ -1,5 +1,4 @@
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-const API_URL = 'https://api.openai.com/v1/chat/completions';
+import { proxyChat } from './api-proxy';
 
 export interface VoiceConversationMessage {
   role: 'system' | 'user' | 'assistant';
@@ -148,23 +147,12 @@ IMPORTANT:
 export async function getVoiceResponse(
   conversationHistory: VoiceConversationMessage[]
 ): Promise<VoiceAIResponse> {
-  if (!OPENAI_API_KEY) {
-    return { text: 'OpenAI API key not configured.', waitForInput: false, closeAfterAction: false };
-  }
-
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: conversationHistory,
-        temperature: 0.3,
-        max_tokens: 300,
-      }),
+    const data = await proxyChat(conversationHistory, {
+      temperature: 0.3,
+      max_tokens: 300,
     });
 
-    const data = await res.json();
     const text = data.choices?.[0]?.message?.content || '';
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
