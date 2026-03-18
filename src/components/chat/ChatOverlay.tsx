@@ -13,6 +13,8 @@ import { useContactStore } from '../../stores/contactStore';
 import { useBusinessStore } from '../../stores/appStore';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useNavigate } from 'react-router-dom';
+import { usePaywall, incrementDailyCounter } from '../../lib/paywall';
+import PaywallModal from '../shared/PaywallModal';
 
 interface Props {
   open: boolean;
@@ -46,6 +48,7 @@ export default function ChatOverlay({ open, onClose }: Props) {
   const [streamText, setStreamText] = useState('');
   const [actionExecuted, setActionExecuted] = useState<string | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -56,6 +59,7 @@ export default function ChatOverlay({ open, onClose }: Props) {
   const { contacts, addContact } = useContactStore();
   const { business } = useBusinessStore();
   const { language } = useLanguageStore();
+  const { check } = usePaywall();
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -191,6 +195,12 @@ export default function ChatOverlay({ open, onClose }: Props) {
     const msg = text || input.trim();
     if (!msg || streaming) return;
 
+    const result = await check('chat');
+    if (!result.allowed) {
+      setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'chat' });
+      return;
+    }
+
     const userMsg: ChatMessage = { role: 'user', content: msg };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -209,6 +219,7 @@ export default function ChatOverlay({ open, onClose }: Props) {
     setStreaming(false);
     setStreamText('');
     setMessages([...newMessages, { role: 'assistant', content: responseText, action }]);
+    incrementDailyCounter('chat');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -449,6 +460,14 @@ export default function ChatOverlay({ open, onClose }: Props) {
             </button>
           </div>
         </div>
+
+        <PaywallModal
+          open={paywallInfo.open}
+          onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
+          limitType={paywallInfo.type}
+          current={paywallInfo.current}
+          max={paywallInfo.max}
+        />
 
         {showEndConfirm && (
           <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-t-3xl">
