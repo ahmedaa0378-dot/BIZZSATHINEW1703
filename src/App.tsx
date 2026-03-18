@@ -168,6 +168,7 @@ export default function App() {
 <Route path="/subscription" element={<AuthGuard><SubscriptionPage /></AuthGuard>} />
 <Route path="/payments" element={<AuthGuard><PaymentsPage /></AuthGuard>} />
 <Route path="/whatsapp" element={<AuthGuard><WhatsAppPage /></AuthGuard>} />
+<Route path="/legal" element={<AuthGuard><LegalPage /></AuthGuard>} />
 
 {/* Protected app */}
 <Route element={<AuthGuard><AppShell /></AuthGuard>}>
