@@ -64,6 +64,7 @@ export default function HomePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<'income' | 'expense'>('expense');
   const { check } = usePaywall();
+  const { insights, fetchInsights } = useInsightsStore();
 const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number; max: number; type: string }>({ open: false, current: 0, max: 0, type: '' });
 
 
