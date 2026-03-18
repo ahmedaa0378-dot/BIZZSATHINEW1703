@@ -182,7 +182,7 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
   }
   setAddType('income');
   setShowAdd(true);
-}}
+}} />
           <QuickAction icon={ArrowDownCircle} label={t('add_expense')} color="red"
             onClick={async () => {
   const result = await check('transaction');
@@ -192,7 +192,7 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
   }
   setAddType('expense');
   setShowAdd(true);
-}}
+}} />
           <QuickAction icon={FileText} label={t('create_invoice')} color="blue" onClick={() => navigate('/invoices/create')} />
           <QuickAction icon={Package} label={t('check_stock')} color="amber" onClick={() => navigate('/stock')} />
         </div>
