@@ -60,11 +60,8 @@ function AppLoader() {
   return (
     <div className="min-h-screen bg-surface-light dark:bg-surface-dark flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 
-          flex items-center justify-center shadow-glow-blue animate-pulse">
-          <span className="text-white text-xl font-bold">BS</span>
-        </div>
-        <Loader2 size={20} className="text-blue-500 animate-spin" />
+        <AnimatedLogo size="lg" />
+        <Loader2 size={20} className="text-[#c8ee44] animate-spin" />
       </div>
     </div>
   );
