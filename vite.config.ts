@@ -7,17 +7,18 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'BizzSathi',
+        name: 'BizzSathi — Your AI Business Partner',
         short_name: 'BizzSathi',
-        description: 'Business management app for Indian MSMEs',
-        theme_color: '#3b82f6',
-        background_color: '#f8fafc',
+        description: 'AI-powered business management for Indian MSMEs. Track sales, manage inventory, create invoices, and grow your business.',
+        theme_color: '#050505',
+        background_color: '#050505',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['business', 'finance', 'productivity'],
         icons: [
           {
             src: '/icon-192.png',
@@ -30,10 +31,10 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: '/icon-512.png',
+            src: '/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'maskable',
           },
         ],
       },
@@ -47,6 +48,20 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-files',
+              expiration: {
+                maxEntries: 20,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
