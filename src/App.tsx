@@ -23,6 +23,7 @@ import DistributorPage from './pages/DistributorPage';
 import InsightsPage from './pages/InsightsPage';
 import TeamPage from './pages/TeamPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import AnimatedLogo from './components/brand/AnimatedLogo';
 import PaymentsPage from './pages/PaymentsPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import LegalPage from './pages/LegalPage';
