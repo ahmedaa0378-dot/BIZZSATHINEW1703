@@ -67,7 +67,7 @@ export default function MorePage() {
     {
       title: 'SUPPORT',
       items: [
-        { icon: HelpCircle, label: 'Help & Support' },
+        { icon: HelpCircle, label: 'Help & Support', action: () => navigate('/help') },
         { icon: FileText, label: 'Terms & Privacy', action: () => navigate('/legal') },
         { icon: Info, label: 'About BizzSathi', rightText: 'v1.0.0' },
       ],
