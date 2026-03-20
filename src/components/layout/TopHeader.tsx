@@ -16,7 +16,7 @@ export default function TopHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 h-14
+    <header className="sticky top-0 z-50 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] h-[calc(56px+env(safe-area-inset-top))]
       bg-white/80 backdrop-blur-xl border-b border-neutral-200/60
       dark:bg-black/80 dark:backdrop-blur-xl dark:border-white/5">
       {/* Logo Text */}
