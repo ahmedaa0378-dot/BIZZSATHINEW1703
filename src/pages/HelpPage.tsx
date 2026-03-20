@@ -2,9 +2,12 @@ import { useState } from 'react';
 import {
   ArrowLeft, ChevronDown, MessageCircle, Mail, Phone,
   ExternalLink, FileText, Sparkles, Shield, HelpCircle,
+  Send, Check, Loader2, AlertCircle,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore, useBusinessStore } from '../stores/appStore';
+import { supabase } from '../lib/supabase';
 import PageWrapper from '../components/layout/PageWrapper';
 
 const FAQS = [
@@ -58,9 +61,18 @@ const FAQS = [
   },
 ];
 
+const TICKET_CATEGORIES = [
+  { value: 'general', label: 'General Query' },
+  { value: 'bug', label: 'Report a Bug' },
+  { value: 'feature', label: 'Feature Request' },
+  { value: 'billing', label: 'Billing / Subscription' },
+  { value: 'feedback', label: 'Feedback' },
+];
+
 export default function HelpPage() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   return (
     <PageWrapper>
@@ -75,39 +87,44 @@ export default function HelpPage() {
 
       <div className="px-4 pt-4 pb-24 space-y-5 animate-fade-in">
 
+        {/* Support & Feedback CTA */}
+        <button onClick={() => setShowForm(true)}
+          className="w-full premium-card p-5 text-left active:scale-[0.98] transition-all">
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c8ee44] to-[#a3c428] flex items-center justify-center shadow-[0_4px_15px_rgba(200,238,68,0.25)]">
+              <Send size={20} className="text-black" />
+            </div>
+            <div className="flex-1">
+              <p className="text-base font-bold text-neutral-900 dark:text-white">Support & Feedback</p>
+              <p className="text-xs text-neutral-500 dark:text-zinc-500 mt-0.5">Submit a query, report a bug, or share feedback</p>
+            </div>
+            <ChevronDown size={16} className="text-neutral-300 dark:text-zinc-700 -rotate-90" />
+          </div>
+        </button>
+
         {/* Quick Contact */}
-        <div className="premium-card p-5">
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
-                <HelpCircle size={18} className="text-accent-dark dark:text-accent" />
-              </div>
+        <div className="glass-card p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-400 dark:text-zinc-600 mb-3">
+            QUICK CONTACT
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            <a href="https://wa.me/919999999999?text=Hi%20BizzSathi%20team%2C%20I%20need%20help%20with..."
+              target="_blank" rel="noopener"
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/10 active:scale-[0.97] transition-all">
+              <MessageCircle size={16} className="text-emerald-500" />
               <div>
-                <p className="text-sm font-bold text-neutral-900 dark:text-white">Need help?</p>
-                <p className="text-xs text-neutral-500 dark:text-zinc-500">We're here for you</p>
+                <p className="text-xs font-semibold text-neutral-900 dark:text-white">WhatsApp</p>
+                <p className="text-[10px] text-neutral-500 dark:text-zinc-500">Quick reply</p>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <a href="https://wa.me/919999999999?text=Hi%20BizzSathi%20team%2C%20I%20need%20help%20with..."
-                target="_blank" rel="noopener"
-                className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/10 active:scale-[0.97] transition-all">
-                <MessageCircle size={16} className="text-emerald-500" />
-                <div>
-                  <p className="text-xs font-semibold text-neutral-900 dark:text-white">WhatsApp</p>
-                  <p className="text-[10px] text-neutral-500 dark:text-zinc-500">Quick reply</p>
-                </div>
-              </a>
-
-              <a href="mailto:support@bizzsathi.com?subject=Help%20Request"
-                className="flex items-center gap-2.5 p-3 rounded-xl bg-blue-500/10 active:scale-[0.97] transition-all">
-                <Mail size={16} className="text-blue-500" />
-                <div>
-                  <p className="text-xs font-semibold text-neutral-900 dark:text-white">Email</p>
-                  <p className="text-[10px] text-neutral-500 dark:text-zinc-500">support@bizzsathi.com</p>
-                </div>
-              </a>
-            </div>
+            </a>
+            <a href="mailto:support@bizzsathi.com?subject=Help%20Request"
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-blue-500/10 active:scale-[0.97] transition-all">
+              <Mail size={16} className="text-blue-500" />
+              <div>
+                <p className="text-xs font-semibold text-neutral-900 dark:text-white">Email</p>
+                <p className="text-[10px] text-neutral-500 dark:text-zinc-500">support@bizzsathi.com</p>
+              </div>
+            </a>
           </div>
         </div>
 
@@ -127,7 +144,6 @@ export default function HelpPage() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-400 dark:text-zinc-600 mb-3">
             FREQUENTLY ASKED QUESTIONS
           </p>
-
           <div className="space-y-2">
             {FAQS.map((faq, i) => (
               <div key={i} className="glass-card overflow-hidden">
@@ -191,6 +207,170 @@ export default function HelpPage() {
           <p className="text-[10px] text-neutral-400 dark:text-zinc-600">Made with ❤️ in India</p>
         </div>
       </div>
+
+      {/* Support Form Modal */}
+      {showForm && <SupportForm onClose={() => setShowForm(false)} />}
     </PageWrapper>
+  );
+}
+
+// ========== SUPPORT FORM ==========
+function SupportForm({ onClose }: { onClose: () => void }) {
+  const { user } = useAuthStore();
+  const { business } = useBusinessStore();
+
+  const [category, setCategory] = useState('general');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!subject.trim() || !message.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const { error: dbError } = await supabase
+        .from('support_tickets')
+        .insert({
+          business_id: business?.id || null,
+          user_id: user?.id || null,
+          name: business?.ownerName || user?.email || 'User',
+          email: user?.email || null,
+          category,
+          subject: subject.trim(),
+          message: message.trim(),
+          status: 'open',
+        });
+
+      if (dbError) throw dbError;
+
+      setSubmitted(true);
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err: any) {
+      console.error('Submit ticket error:', err);
+      setError('Could not submit. Please try again or contact us on WhatsApp.');
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="relative w-full max-w-[430px] max-h-[90vh] overflow-y-auto
+        bg-white dark:bg-[#0a0a0a] rounded-t-3xl animate-slide-up">
+
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 pt-5 pb-3
+          bg-white dark:bg-[#0a0a0a]">
+          <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
+            {submitted ? 'Thank You!' : 'Support & Feedback'}
+          </h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5">
+            <ArrowLeft size={20} className="text-neutral-500" />
+          </button>
+        </div>
+
+        <div className="px-5 pb-8">
+          {submitted ? (
+            <div className="py-8 flex flex-col items-center gap-4 animate-fade-in">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                <Check size={32} className="text-emerald-500" />
+              </div>
+              <p className="text-base font-bold text-neutral-900 dark:text-white">Ticket Submitted!</p>
+              <p className="text-sm text-neutral-500 dark:text-zinc-400 text-center">
+                We'll get back to you within 24-48 hours. You can also reach us on WhatsApp for faster response.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 animate-fade-in">
+
+              {/* Category */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">
+                  Category
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {TICKET_CATEGORIES.map((c) => (
+                    <button key={c.value} onClick={() => setCategory(c.value)}
+                      className={cn('px-3 py-2 rounded-xl text-xs font-semibold transition-all',
+                        category === c.value
+                          ? 'bg-accent text-black'
+                          : 'bg-neutral-100 dark:bg-white/8 text-neutral-600 dark:text-zinc-400')}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">
+                  Subject *
+                </label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Brief description of your issue"
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium
+                    bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10
+                    text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-zinc-600
+                    focus:ring-2 focus:ring-[#c8ee44]/50 outline-none transition-all"
+                />
+              </div>
+
+              {/* Message */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">
+                  Message *
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Describe your issue, feedback, or suggestion in detail..."
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium resize-none
+                    bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10
+                    text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-zinc-600
+                    focus:ring-2 focus:ring-[#c8ee44]/50 outline-none transition-all"
+                />
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                  <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                  <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !subject.trim() || !message.trim()}
+                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-[15px]
+                  bg-gradient-to-r from-[#c8ee44] to-[#a3c428] text-black shadow-glow-green
+                  active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                {submitting ? 'Submitting...' : 'Submit Ticket'}
+              </button>
+
+              <p className="text-[10px] text-neutral-400 dark:text-zinc-600 text-center">
+                We typically respond within 24-48 hours
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
