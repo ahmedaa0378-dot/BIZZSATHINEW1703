@@ -27,6 +27,7 @@ import AnimatedLogo from './components/brand/AnimatedLogo';
 import PaymentsPage from './pages/PaymentsPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import LegalPage from './pages/LegalPage';
+import HelpPage from './pages/HelpPage';
 import { Loader2 } from 'lucide-react';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
