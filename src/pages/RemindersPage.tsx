@@ -4,6 +4,7 @@ import { useReminderStore, Reminder } from '../stores/reminderStore';
 import { useAuthStore, useBusinessStore } from '../stores/appStore';
 import { cn } from '../lib/utils';
 import { Plus, Clock, CheckCircle2, Trash2, Bell, ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 
 const types = [
