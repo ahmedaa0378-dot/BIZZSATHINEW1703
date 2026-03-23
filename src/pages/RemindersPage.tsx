@@ -60,19 +60,27 @@ export default function RemindersPage() {
   return (
     <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-neutral-100 dark:border-white/5 px-4 py-3">
-        <div className="max-w-[430px] mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-neutral-900 dark:text-white">Reminders</h1>
-            {pendingCount > 0 && <p className="text-xs text-neutral-500 dark:text-zinc-500">{pendingCount} pending</p>}
-          </div>
-          <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#c8ee44] text-black text-sm font-semibold">
-            <Plus size={16} />
-            Add
-          </button>
-        </div>
+<div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-neutral-100 dark:border-white/5 px-4 py-3">
+  <div className="max-w-[430px] mx-auto flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <button
+        onClick={() => navigate(-1)}
+        className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors -ml-2"
+      >
+        <ChevronLeft size={22} className="text-neutral-700 dark:text-zinc-300" />
+      </button>
+      <div>
+        <h1 className="text-lg font-bold text-neutral-900 dark:text-white">Reminders</h1>
+        {pendingCount > 0 && <p className="text-xs text-neutral-500 dark:text-zinc-500">{pendingCount} pending</p>}
       </div>
+    </div>
+    <button onClick={() => setShowAdd(true)}
+      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#c8ee44] text-black text-sm font-semibold">
+      <Plus size={16} />
+      Add
+    </button>
+  </div>
+</div>
 
       <div className="max-w-[430px] mx-auto px-4 pt-4 space-y-4">
         {/* Filter tabs */}
