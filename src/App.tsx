@@ -100,7 +100,6 @@ export default function App() {
         if (session?.user && mounted) {
           setUser({ id: session.user.id, email: session.user.email ?? '' });
 
-          // Check if onboarded
           const { data: biz } = await supabase
             .from('businesses')
             .select('id, business_name, business_type, business_category, owner_name, onboarding_completed, subscription_tier, trial_ends_at')
@@ -109,17 +108,16 @@ export default function App() {
 
           if (biz && biz.onboarding_completed) {
             setBusiness({
-  id: biz.id,
-  name: biz.business_name,
-  type: biz.business_type,
-  category: biz.business_category,
-  ownerName: biz.owner_name,
-  subscriptionTier: biz.subscription_tier || 'free',
-  trialEndsAt: biz.trial_ends_at || null,
-});
+              id: biz.id,
+              name: biz.business_name,
+              type: biz.business_type,
+              category: biz.business_category,
+              ownerName: biz.owner_name,
+              subscriptionTier: biz.subscription_tier || 'free',
+              trialEndsAt: biz.trial_ends_at || null,
+            });
             setOnboarded(true);
           }
-      }
         }
       } catch (err) {
         console.error('Session load error:', err);
@@ -130,36 +128,38 @@ export default function App() {
 
     loadSession();
 
-const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-  if (!mounted) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
 
-  if (event === 'SIGNED_OUT') {
-    setUser(null);
-    setOnboarded(false);
-    setBusiness(null);
-  } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-    setUser({ id: session.user.id, email: session.user.email ?? '' });
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setOnboarded(false);
+        setBusiness(null);
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        setUser({ id: session.user.id, email: session.user.email ?? '' });
 
-    if (event === 'SIGNED_IN') {
-      const { data: biz } = await supabase
-        .from('businesses')
-        .select('id, business_name, business_type, business_category, owner_name, onboarding_completed')
-        .eq('owner_id', session.user.id)
-        .single();
+        if (event === 'SIGNED_IN') {
+          const { data: biz } = await supabase
+            .from('businesses')
+            .select('id, business_name, business_type, business_category, owner_name, onboarding_completed, subscription_tier, trial_ends_at')
+            .eq('owner_id', session.user.id)
+            .single();
 
-      if (biz && biz.onboarding_completed) {
-        setBusiness({
-          id: biz.id,
-          name: biz.business_name,
-          type: biz.business_type,
-          category: biz.business_category,
-          ownerName: biz.owner_name,
-        });
-        setOnboarded(true);
+          if (biz && biz.onboarding_completed) {
+            setBusiness({
+              id: biz.id,
+              name: biz.business_name,
+              type: biz.business_type,
+              category: biz.business_category,
+              ownerName: biz.owner_name,
+              subscriptionTier: biz.subscription_tier || 'free',
+              trialEndsAt: biz.trial_ends_at || null,
+            });
+            setOnboarded(true);
+          }
+        }
       }
-    }
-  }
-});
+    });
 
     return () => {
       mounted = false;
@@ -172,37 +172,33 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event,
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
         <Route path="/auth" element={<GuestGuard><AuthPage /></GuestGuard>} />
-
-        {/* Onboarding — auth required */}
-<Route path="/onboarding" element={<AuthGuard><OnboardingPage /></AuthGuard>} />
-<Route path="/invoices/create" element={<AuthGuard><CreateInvoicePage /></AuthGuard>} />
-<Route path="/settings/business" element={<AuthGuard><BusinessProfilePage /></AuthGuard>} />
-<Route path="/settings/payment-methods" element={<AuthGuard><PaymentMethodsPage /></AuthGuard>} />
-<Route path="/settings/invoice" element={<AuthGuard><InvoiceSettingsPage /></AuthGuard>} />
-<Route path="/settings/preferences" element={<AuthGuard><PreferencesPage /></AuthGuard>} />
-<Route path="/marketing" element={<AuthGuard><MarketingPage /></AuthGuard>} />
-<Route path="/distributors" element={<AuthGuard><DistributorPage /></AuthGuard>} />
+        <Route path="/onboarding" element={<AuthGuard><OnboardingPage /></AuthGuard>} />
+        <Route path="/invoices/create" element={<AuthGuard><CreateInvoicePage /></AuthGuard>} />
+        <Route path="/settings/business" element={<AuthGuard><BusinessProfilePage /></AuthGuard>} />
+        <Route path="/settings/payment-methods" element={<AuthGuard><PaymentMethodsPage /></AuthGuard>} />
+        <Route path="/settings/invoice" element={<AuthGuard><InvoiceSettingsPage /></AuthGuard>} />
+        <Route path="/settings/preferences" element={<AuthGuard><PreferencesPage /></AuthGuard>} />
+        <Route path="/marketing" element={<AuthGuard><MarketingPage /></AuthGuard>} />
+        <Route path="/distributors" element={<AuthGuard><DistributorPage /></AuthGuard>} />
         <Route path="/insights" element={<AuthGuard><InsightsPage /></AuthGuard>} />
-<Route path="/team" element={<AuthGuard><TeamPage /></AuthGuard>} />
-<Route path="/subscription" element={<AuthGuard><SubscriptionPage /></AuthGuard>} />
-<Route path="/payments" element={<AuthGuard><PaymentsPage /></AuthGuard>} />
-<Route path="/whatsapp" element={<AuthGuard><WhatsAppPage /></AuthGuard>} />
-<Route path="/legal" element={<AuthGuard><LegalPage /></AuthGuard>} />
+        <Route path="/team" element={<AuthGuard><TeamPage /></AuthGuard>} />
+        <Route path="/subscription" element={<AuthGuard><SubscriptionPage /></AuthGuard>} />
+        <Route path="/payments" element={<AuthGuard><PaymentsPage /></AuthGuard>} />
+        <Route path="/whatsapp" element={<AuthGuard><WhatsAppPage /></AuthGuard>} />
+        <Route path="/legal" element={<AuthGuard><LegalPage /></AuthGuard>} />
         <Route path="/help" element={<AuthGuard><HelpPage /></AuthGuard>} />
         <Route path="/reminders" element={<AuthGuard><RemindersPage /></AuthGuard>} />
 
-{/* Protected app */}
-<Route element={<AuthGuard><AppShell /></AuthGuard>}>
-  <Route path="/" element={<HomePage />} />
-  <Route path="/transactions" element={<TransactionsPage />} />
-  <Route path="/stock" element={<StockPage />} />
-  <Route path="/contacts" element={<ContactsPage />} />
-  <Route path="/more" element={<MorePage />} />
-  <Route path="/invoices" element={<InvoicesPage />} />
-  <Route path="/reports" element={<ReportsPage />} />
-</Route>
+        <Route element={<AuthGuard><AppShell /></AuthGuard>}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/stock" element={<StockPage />} />
+          <Route path="/contacts" element={<ContactsPage />} />
+          <Route path="/more" element={<MorePage />} />
+          <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
