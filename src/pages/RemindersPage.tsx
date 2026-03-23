@@ -3,6 +3,7 @@ import { Plus, Clock, CheckCircle2, Trash2, Bell, Calendar, Tag } from 'lucide-r
 import { useReminderStore, Reminder } from '../stores/reminderStore';
 import { useAuthStore, useBusinessStore } from '../stores/appStore';
 import { cn } from '../lib/utils';
+import { Plus, Clock, CheckCircle2, Trash2, Bell, ChevronLeft } from 'lucide-react';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 
 const types = [
