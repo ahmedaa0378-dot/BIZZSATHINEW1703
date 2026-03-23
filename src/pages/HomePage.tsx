@@ -73,14 +73,25 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
 
   // Load data
   useEffect(() => {
+  if (business?.id) {
+    fetchTransactions(business.id);
+    fetchCategories(business.id);
+    fetchPaymentMethods(business.id);
+    fetchCashInHand(business.id);
+  }
+
+  // Re-fetch when chatbot logs a transaction
+  const handler = () => {
     if (business?.id) {
+      const { start, end } = getDateRange(period);
       fetchTransactions(business.id);
-      fetchCategories(business.id);
-      fetchPaymentMethods(business.id);
-      fetchInsights(business.id);
+      fetchDashboardStats(business.id, start, end);
       fetchCashInHand(business.id);
     }
-  }, [business?.id]);
+  };
+  window.addEventListener('bizzsathi:transaction:added', handler);
+  return () => window.removeEventListener('bizzsathi:transaction:added', handler);
+}, [business?.id]);
 
   // Fetch stats when period changes
   useEffect(() => {
