@@ -119,30 +119,6 @@ export default function App() {
 });
             setOnboarded(true);
           }
-          // Register push subscription — with timeout so it never blocks app load
-if ('serviceWorker' in navigator && 'PushManager' in window) {
-  Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 3000))
-  ]).then(async (reg: any) => {
-    try {
-      const existing = await reg.pushManager.getSubscription();
-      const sub = existing || await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
-      });
-      const subJson = sub.toJSON() as any;
-      await supabase.from('push_subscriptions').upsert({
-        user_id: session.user.id,
-        endpoint: subJson.endpoint,
-        p256dh: subJson.keys.p256dh,
-        auth_key: subJson.keys.auth,
-      }, { onConflict: 'user_id,endpoint' });
-    } catch (e) {
-      console.log('Push subscription skipped:', e);
-    }
-  }).catch(e => console.log('SW not ready:', e));
-}
       }
         }
       } catch (err) {
