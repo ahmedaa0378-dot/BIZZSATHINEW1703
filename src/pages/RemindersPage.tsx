@@ -84,7 +84,7 @@ useEffect(() => {
   </div>
 </div>
 
-      <div className="max-w-[430px] mx-auto px-4 pt-4 space-y-4">
+      <div className="max-w-[430px] mx-auto px-4 pt-14 space-y-4">
         {/* Filter tabs */}
         <div className="flex gap-2 p-1 rounded-2xl bg-neutral-100 dark:bg-white/5">
           {(['pending', 'all', 'done'] as const).map(f => (
