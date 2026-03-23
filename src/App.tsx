@@ -190,6 +190,7 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event,
 <Route path="/whatsapp" element={<AuthGuard><WhatsAppPage /></AuthGuard>} />
 <Route path="/legal" element={<AuthGuard><LegalPage /></AuthGuard>} />
         <Route path="/help" element={<AuthGuard><HelpPage /></AuthGuard>} />
+        <Route path="/reminders" element={<AuthGuard><RemindersPage /></AuthGuard>} />
 
 {/* Protected app */}
 <Route element={<AuthGuard><AppShell /></AuthGuard>}>
