@@ -40,7 +40,7 @@ return (
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="relative" ref={langRef}>
+        <div className="relative z-[60]" ref={langRef}>
           <button onClick={() => setIsLangOpen(!isLangOpen)}
             className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/10 rounded-full px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-white/15 transition-colors">
             {languageLabel}
@@ -60,7 +60,7 @@ return (
           )}
         </div>
 
-        <div className="relative" ref={notifRef}>
+        <div className="relative z-[60]" ref={notifRef}>
           <button onClick={() => setIsNotifOpen(!isNotifOpen)}
             className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
             <Bell size={20} className="text-gray-700 dark:text-gray-300" />
