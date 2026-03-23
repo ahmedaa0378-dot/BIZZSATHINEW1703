@@ -37,9 +37,9 @@ export default function RemindersPage() {
   const [type, setType] = useState('general');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (user) fetchReminders(user.id);
-  }, [user]);
+useEffect(() => {
+  if (user && business) fetchReminders(user.id);
+}, [user, business]);
 
   const handleAdd = async () => {
     if (!title || !dueDate || !user || !business) return;
