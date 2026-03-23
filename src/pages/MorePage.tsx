@@ -48,6 +48,7 @@ export default function MorePage() {
         { icon: Megaphone, label: 'Marketing Suite', action: () => navigate('/marketing') },
         { icon: MapPin, label: 'Find Distributors', action: () => navigate('/distributors') },
         { icon: MessageCircle, label: 'WhatsApp', action: () => navigate('/whatsapp') },
+        { icon: Bell, label: 'Reminders', action: () => navigate('/reminders') },
         { icon: CreditCard, label: 'Payments & Collections', action: () => navigate('/payments') },
       ],
     },
