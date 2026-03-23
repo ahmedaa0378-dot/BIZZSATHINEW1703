@@ -128,16 +128,36 @@ export default function App() {
 
     loadSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setOnboarded(false);
-        setBusiness(null);
-      } else if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email ?? '' });
+const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+  if (!mounted) return;
+
+  if (event === 'SIGNED_OUT') {
+    setUser(null);
+    setOnboarded(false);
+    setBusiness(null);
+  } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+    setUser({ id: session.user.id, email: session.user.email ?? '' });
+
+    if (event === 'SIGNED_IN') {
+      const { data: biz } = await supabase
+        .from('businesses')
+        .select('id, business_name, business_type, business_category, owner_name, onboarding_completed')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (biz && biz.onboarding_completed) {
+        setBusiness({
+          id: biz.id,
+          name: biz.business_name,
+          type: biz.business_type,
+          category: biz.business_category,
+          ownerName: biz.owner_name,
+        });
+        setOnboarded(true);
       }
-    });
+    }
+  }
+});
 
     return () => {
       mounted = false;
