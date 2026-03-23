@@ -26,6 +26,7 @@ export default function RemindersPage() {
   const { reminders, loading, fetchReminders, addReminder, toggleComplete, deleteReminder } = useReminderStore();
   const { user } = useAuthStore();
   const { business } = useBusinessStore();
+  const navigate = useNavigate();
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'done'>('pending');
 
