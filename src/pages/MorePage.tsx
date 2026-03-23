@@ -97,13 +97,20 @@ export default function MorePage() {
             <p className="text-sm text-neutral-500 dark:text-zinc-400">{business?.name || 'Khan General Store'}</p>
           </div>
         </div>
-        <div className="relative z-10 mt-4 flex items-center gap-2 px-3 py-2 rounded-xl 
-          bg-accent/10 dark:bg-accent/10 border border-accent/20">
-          <Sparkles size={14} className="text-accent-dark dark:text-accent" />
-          <span className="text-xs font-semibold text-accent-dark dark:text-accent">
-            Pro Trial — 5 days left
-          </span>
-        </div>
+       {business?.trialEndsAt && (
+  <div className="relative z-10 mt-4 flex items-center gap-2 px-3 py-2 rounded-xl 
+    bg-accent/10 dark:bg-accent/10 border border-accent/20">
+    <Sparkles size={14} className="text-accent-dark dark:text-accent" />
+    <span className="text-xs font-semibold text-accent-dark dark:text-accent">
+      {(() => {
+        const days = Math.ceil((new Date(business.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (days <= 0) return 'Pro Trial — Expired';
+        if (days === 1) return 'Pro Trial — Last day!';
+        return `Pro Trial — ${days} days left`;
+      })()}
+    </span>
+  </div>
+)}
       </div>
 
       {/* Theme Toggle Card */}
