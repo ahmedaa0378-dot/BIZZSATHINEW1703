@@ -62,7 +62,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-surface-light dark:bg-surface-dark pb-24">
       {/* Header */}
-<div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-neutral-100 dark:border-white/5 px-4 py-3">
+<div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-neutral-100 dark:border-white/5 px-4 pb-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
   <div className="max-w-[430px] mx-auto flex items-center justify-between">
     <div className="flex items-center gap-3">
       <button
@@ -84,7 +84,7 @@ useEffect(() => {
   </div>
 </div>
 
-      <div className="max-w-[430px] mx-auto px-4 pt-14 space-y-4">
+      <div className="max-w-[430px] mx-auto px-4 pt-4 space-y-4">
         {/* Filter tabs */}
         <div className="flex gap-2 p-1 rounded-2xl bg-neutral-100 dark:bg-white/5">
           {(['pending', 'all', 'done'] as const).map(f => (
