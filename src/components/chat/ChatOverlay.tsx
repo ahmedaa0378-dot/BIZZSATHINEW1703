@@ -157,10 +157,10 @@ export default function ChatOverlay({ open, onClose }: Props) {
       });
 
       if (tx) {
-        fetchTransactions(business.id);
-        const today = new Date().toISOString().split('T')[0];
-        fetchDashboardStats(business.id, today, today);
-        fetchCashInHand(business.id);
+         await fetchTransactions(business.id);
+  await fetchCashInHand(business.id);
+          window.dispatchEvent(new CustomEvent('bizzsathi:transaction:added'));
+
 
         const confirmMsgs: Record<string, string> = {
           en: `Done! Rs ${(d.amount || 0).toLocaleString('en-IN')} ${type} logged as ${cat?.name || d.category || 'General'} via ${d.payment_method || 'Cash'}. Anything else?`,
