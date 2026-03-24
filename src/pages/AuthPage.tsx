@@ -128,22 +128,17 @@ const handleVerifyOTP = async () => {
         otp,
       },
     });
-
-    if (error || !data?.success) {
-      throw new Error(data?.error || 'Invalid OTP');
-    }
+    if (error || !data?.success) throw new Error(data?.error || 'Invalid OTP');
 
     // Sign in via magic link to the phone-based email
     const { error: magicError } = await supabase.auth.signInWithOtp({
       email: data.email,
       options: { shouldCreateUser: false },
     });
-
     if (magicError) throw magicError;
 
     setUser({ id: data.userId, email: data.email });
     await checkBusinessAndNavigate(data.userId);
-
   } catch (err: any) {
     setError(err.message || 'Invalid OTP');
   } finally {
