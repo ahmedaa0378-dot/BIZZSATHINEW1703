@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTransactionStore } from '../stores/transactionStore';
 import { useBusinessStore } from '../stores/appStore';
 import AddTransactionModal from '../components/transactions/AddTransactionModal';
-import { usePaywall } from '../lib/paywall';
 import PaywallModal from '../components/shared/PaywallModal';
 import { useInsightsStore } from '../stores/insightsStore';
 import { useTranslation } from '../lib/i18n';
@@ -57,9 +56,8 @@ export default function HomePage() {
   const [period, setPeriod] = useState<Period>('today');
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<'income' | 'expense'>('expense');
-  const { check } = usePaywall();
   const { insights, fetchInsights } = useInsightsStore();
-const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number; max: number; type: string }>({ open: false, current: 0, max: 0, type: '' });
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
 
   const { t, greeting } = useTranslation();
@@ -182,22 +180,12 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
         {/* === QUICK ACTIONS === */}
         <div className="grid grid-cols-4 gap-2.5">
           <QuickAction icon={ArrowUpCircle} label={t('add_income')} color="emerald"
-            onClick={async () => {
-  const result = await check('transaction');
-  if (!result.allowed) {
-    setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'transaction' });
-    return;
-  }
+            onClick={() => {
   setAddType('income');
   setShowAdd(true);
 }} />
           <QuickAction icon={ArrowDownCircle} label={t('add_expense')} color="red"
-            onClick={async () => {
-  const result = await check('transaction');
-  if (!result.allowed) {
-    setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'transaction' });
-    return;
-  }
+            onClick={() => {
   setAddType('expense');
   setShowAdd(true);
 }} />
@@ -337,11 +325,8 @@ const [paywallInfo, setPaywallInfo] = useState<{ open: boolean; current: number;
         defaultType={addType}
       />
     <PaywallModal
-  open={paywallInfo.open}
-  onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
-  limitType={paywallInfo.type}
-  current={paywallInfo.current}
-  max={paywallInfo.max}
+  open={paywallOpen}
+  onClose={() => setPaywallOpen(false)}
 />
     </>
   );
