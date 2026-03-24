@@ -5,7 +5,6 @@ import {
   Crown, Shield, Zap, UserPlus,
 } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
-import { useAuthStore, useBusinessStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
