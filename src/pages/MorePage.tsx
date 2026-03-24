@@ -99,18 +99,23 @@ export default function MorePage() {
           </div>
         </div>
        {business?.trialEndsAt && (
-  <div className="relative z-10 mt-4 flex items-center gap-2 px-3 py-2 rounded-xl 
-    bg-accent/10 dark:bg-accent/10 border border-accent/20">
+  {/* Plan Badge */}
+<div className="relative z-10 mt-4 flex items-center justify-between gap-2 px-3 py-2 rounded-xl 
+  bg-accent/10 dark:bg-accent/10 border border-accent/20">
+  <div className="flex items-center gap-2">
     <Sparkles size={14} className="text-accent-dark dark:text-accent" />
     <span className="text-xs font-semibold text-accent-dark dark:text-accent">
-      {(() => {
-        const days = Math.ceil((new Date(business.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        if (days <= 0) return 'Pro Trial — Expired';
-        if (days === 1) return 'Pro Trial — Last day!';
-        return `Pro Trial — ${days} days left`;
-      })()}
+      {planLabel(business)}
     </span>
   </div>
+  {!hasAccess(business) && (
+    <button
+      onClick={() => navigate('/subscription')}
+      className="px-2.5 py-1 rounded-lg bg-[#c8ee44] text-black text-[10px] font-bold">
+      Upgrade
+    </button>
+  )}
+</div>
 )}
       </div>
 
