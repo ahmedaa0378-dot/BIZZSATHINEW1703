@@ -9,6 +9,7 @@ import { useAuthStore, useBusinessStore } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { useAuthStore, useBusinessStore, planLabel, hasAccess, trialDaysLeft } from '../stores/appStore';
 
 interface MenuItem {
   icon: typeof Building2;
