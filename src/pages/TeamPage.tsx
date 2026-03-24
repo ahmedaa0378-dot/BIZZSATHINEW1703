@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Users, Shield, Eye, CreditCard as Edit2, Trash2, Phone, Mail, X, Loader2, Check, ChevronDown, UserPlus, Crown, Briefcase, User, Calculator } from 'lucide-react';
+import { ArrowLeft, Trash2, X, Loader2, Check, UserPlus, Crown, Briefcase, User, Calculator } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+import { useBusinessStore, maxUsers } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
-import { useBusinessStore, maxUsers } from '../stores/appStore';
 
 interface TeamMember {
   id: string;
@@ -43,13 +43,15 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
 
-  // Invite form
   const [invName, setInvName] = useState('');
   const [invPhone, setInvPhone] = useState('');
   const [invEmail, setInvEmail] = useState('');
   const [invRole, setInvRole] = useState('staff');
   const [inviting, setInviting] = useState(false);
   const [invited, setInvited] = useState(false);
+
+  const maxTeamUsers = maxUsers(business);
+  const canAddMore = members.length < maxTeamUsers - 1;
 
   useEffect(() => { loadMembers(); }, []);
 
@@ -60,7 +62,6 @@ export default function TeamPage() {
       .select('*')
       .eq('business_id', business.id)
       .order('created_at');
-
     if (data) setMembers(data as TeamMember[]);
     setLoading(false);
   };
@@ -68,7 +69,6 @@ export default function TeamPage() {
   const handleInvite = async () => {
     if (!invName.trim() || !business?.id) return;
     setInviting(true);
-
     const { error } = await supabase.from('team_members').insert({
       business_id: business.id,
       name: invName.trim(),
@@ -77,7 +77,6 @@ export default function TeamPage() {
       role: invRole,
       status: 'invited',
     });
-
     setInviting(false);
     if (!error) {
       setInvited(true);
@@ -95,21 +94,18 @@ export default function TeamPage() {
     setMembers(members.filter((m) => m.id !== id));
   };
 
-  const handleChangeRole = async (id: string, role: string) => {
-    await supabase.from('team_members').update({ role }).eq('id', id);
-    setMembers(members.map((m) => m.id === id ? { ...m, role: role as any } : m));
-  };
-
   return (
     <PageWrapper>
-      <div className="sticky top-0 z-50 flex items-center gap-3 px-4 pt-[env(safe-area-inset-top)] h-[calc(56px+env(safe-area-inset-top))]
+      <div className="sticky top-0 z-50 flex items-center gap-3 px-4 h-14
         bg-white/80 backdrop-blur-xl border-b border-neutral-200/60
         dark:bg-black/80 dark:border-white/5">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5">
           <ArrowLeft size={20} className="text-neutral-600 dark:text-zinc-400" />
         </button>
         <h1 className="text-[17px] font-bold text-neutral-900 dark:text-white">Team</h1>
-        <span className="ml-auto text-xs text-neutral-400 dark:text-zinc-600">{members.length + 1} members</span>
+        <span className="ml-auto text-xs text-neutral-400 dark:text-zinc-600">
+          {members.length + 1}/{maxTeamUsers} members
+        </span>
       </div>
 
       <div className="px-4 pt-3 pb-24 space-y-4 animate-fade-in">
@@ -170,7 +166,7 @@ export default function TeamPage() {
                         <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-semibold',
                           m.status === 'active' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
                           m.status === 'invited' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-                          'bg-neutral-100 dark:bg-white/8 text-neutral-500')}>
+                          'bg-neutral-100 dark:bg-white/5 text-neutral-500')}>
                           {m.status}
                         </span>
                       </div>
@@ -186,14 +182,35 @@ export default function TeamPage() {
           </div>
         )}
 
-        {/* Invite Button */}
-        <button onClick={() => setShowInvite(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl
-            bg-neutral-100 dark:bg-white/5 border border-dashed border-neutral-300 dark:border-white/10
-            text-neutral-600 dark:text-zinc-400 text-sm font-semibold
-            hover:bg-neutral-200 dark:hover:bg-white/8 transition-colors">
-          <UserPlus size={16} /> Invite Team Member
-        </button>
+        {/* Invite Button or Limit Reached */}
+        {canAddMore ? (
+          <button onClick={() => setShowInvite(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl
+              bg-neutral-100 dark:bg-white/5 border border-dashed border-neutral-300 dark:border-white/10
+              text-neutral-600 dark:text-zinc-400 text-sm font-semibold
+              hover:bg-neutral-200 dark:hover:bg-white/8 transition-colors">
+            <UserPlus size={16} /> Invite Team Member
+          </button>
+        ) : (
+          <div className="glass-card p-4 text-center space-y-2">
+            <Crown size={20} className="text-[#c8ee44] mx-auto" />
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+              Team limit reached ({maxTeamUsers} users)
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-zinc-500">
+              {business?.subscriptionTier === 'pro'
+                ? 'Upgrade to Business plan for up to 5 team members'
+                : 'You have reached the maximum team size'}
+            </p>
+            {business?.subscriptionTier === 'pro' && (
+              <button
+                onClick={() => navigate('/subscription')}
+                className="px-4 py-2 rounded-xl bg-[#c8ee44] text-black text-xs font-semibold mt-1">
+                Upgrade to Business
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Invite Modal */}
