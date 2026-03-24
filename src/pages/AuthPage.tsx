@@ -94,28 +94,28 @@ const checkBusinessAndNavigate = async (userId: string) => {
   };
 
   // ---- PHONE OTP ----
-  const handleSendOTP = async () => {
-    setError('');
-    if (phone.length < 10) {
-      setError('Enter a valid 10-digit phone number');
-      return;
-    }
-    setLoading(true);
-    try {
-      const fullPhone = '+91' + phone.replace(/\D/g, '').slice(-10);
-      const { error: otpError } = await supabase.auth.signInWithOtp({ phone: fullPhone });
-      if (otpError) throw otpError;
-      setOtpSent(true);
-    } catch (err: any) {
-      if (err.message?.includes('not enabled') || err.message?.includes('provider')) {
-        setError('Phone OTP is not configured yet. Use Email or Google sign-in for now.');
-      } else {
-        setError(err.message || 'Failed to send OTP');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleSendOTP = async () => {
+  setError('');
+  if (phone.length < 10) {
+    setError('Enter a valid 10-digit phone number');
+    return;
+  }
+  setLoading(true);
+  try {
+    const { data, error } = await supabase.functions.invoke('send-sms', {
+      body: {
+        phone: phone.replace(/\D/g, '').slice(-10),
+        action: 'send',
+      },
+    });
+    if (error || !data?.success) throw new Error(data?.error || 'Failed to send OTP');
+    setOtpSent(true);
+  } catch (err: any) {
+    setError(err.message || 'Failed to send OTP');
+  } finally {
+    setLoading(false);
+  }
+};
 
 const handleVerifyOTP = async () => {
   setError('');
