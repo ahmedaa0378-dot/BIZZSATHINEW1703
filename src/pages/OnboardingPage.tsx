@@ -104,6 +104,9 @@ export default function OnboardingPage() {
           latitude: lat,
           longitude: lng,
           onboarding_completed: true, subscription_tier: 'trial', trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          owner_phone: user.email?.includes('@phone.bizzsathi.com')
+  ? user.email.replace('@phone.bizzsathi.com', '')
+  : null,
         })
         .select()
         .single();
