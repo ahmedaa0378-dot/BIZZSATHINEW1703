@@ -11,7 +11,6 @@ import { useContactStore } from '../../stores/contactStore';
 import { useBusinessStore } from '../../stores/appStore';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useNavigate } from 'react-router-dom';
-import { usePaywall, incrementDailyCounter } from '../../lib/paywall';
 import PaywallModal from '../shared/PaywallModal';
 
 interface Props {
@@ -37,7 +36,7 @@ const LANG_CODES: Record<string, string> = {
 export default function VoiceOverlay({ open, onClose }: Props) {
   const [listenState, setListenState] = useState<ListenState>('idle');
   const [bubbles, setBubbles] = useState<ConversationBubble[]>([]);
-  const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<VoiceConversationMessage[]>([]);
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState('');
@@ -55,7 +54,7 @@ export default function VoiceOverlay({ open, onClose }: Props) {
   const { contacts } = useContactStore();
   const { business } = useBusinessStore();
   const { language } = useLanguageStore();
-  const { check } = usePaywall();
+
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -105,12 +104,6 @@ export default function VoiceOverlay({ open, onClose }: Props) {
   const startConversation = async () => {
     if (!isMountedRef.current) return;
 
-    const result = await check('voice');
-    if (!result.allowed) {
-      setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'voice' });
-      return;
-    }
-
     setListenState('processing');
 
     const systemMsg = buildSystemMessage();
@@ -151,7 +144,6 @@ setListenState('waiting');
     setConversationHistory(updatedHistory);
 
     setBubbles((prev) => [...prev, { role: 'assistant', text: response.text }]);
-    incrementDailyCounter('voice');
 
     if (response.action && response.action.type !== 'none' && response.action.type !== 'query') {
       await executeAction(response);
@@ -487,11 +479,8 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
   return (
     <div className="fixed inset-0 z-[200] flex flex-col bg-surface-light dark:bg-surface-dark">
       <PaywallModal
-        open={paywallInfo.open}
-        onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
-        limitType={paywallInfo.type}
-        current={paywallInfo.current}
-        max={paywallInfo.max}
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
       />
       <div className="max-w-[430px] mx-auto w-full flex-1 flex flex-col lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
 
