@@ -104,12 +104,10 @@ const handleSendOTP = async () => {
   setLoading(true);
   try {
     const { data, error } = await supabase.functions.invoke('send-sms', {
-      body: {
-        phone: phone.replace(/\D/g, '').slice(-10),
-        action: 'send',
-      },
+      body: { phone: phone.replace(/\D/g, '').slice(-10), action: 'send' },
     });
     if (error || !data?.success) throw new Error(data?.error || 'Failed to send OTP');
+    setSessionId(data.session_id);
     setOtpSent(true);
   } catch (err: any) {
     setError(err.message || 'Failed to send OTP');
