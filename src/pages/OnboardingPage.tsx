@@ -102,7 +102,7 @@ export default function OnboardingPage() {
           pincode: pincode.trim(),
           latitude: lat,
           longitude: lng,
-          onboarding_completed: true,
+          onboarding_completed: true, subscription_tier: 'trial', trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
@@ -121,13 +121,15 @@ export default function OnboardingPage() {
       // Seed default categories & payment methods
       await supabase.rpc('seed_default_data', { p_business_id: biz.id });
 
-      setBusiness({
-        id: biz.id,
-        name: biz.business_name,
-        type: biz.business_type,
-        category: biz.business_category,
-        ownerName: biz.owner_name,
-      });
+setBusiness({
+  id: biz.id,
+  name: biz.business_name,
+  type: biz.business_type,
+  category: biz.business_category,
+  ownerName: biz.owner_name,
+  subscriptionTier: 'trial',
+  trialEndsAt: biz.trial_ends_at,
+});
       setOnboarded(true);
       navigate('/');
     } catch (err: any) {
