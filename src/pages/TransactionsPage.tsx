@@ -8,7 +8,6 @@ import { formatINR, cn } from '../lib/utils';
 import { useTransactionStore } from '../stores/transactionStore';
 import { useBusinessStore } from '../stores/appStore';
 import AddTransactionModal from '../components/transactions/AddTransactionModal';
-import { usePaywall } from '../lib/paywall';
 import PaywallModal from '../components/shared/PaywallModal';
 import { useTranslation } from '../lib/i18n';
 
@@ -50,8 +49,7 @@ export default function TransactionsPage() {
   const { t } = useTranslation();
   const { transactions, fetchTransactions, loading } = useTransactionStore();
   const { business } = useBusinessStore();
-  const { check } = usePaywall();
-const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
 
   useEffect(() => {
@@ -183,12 +181,7 @@ const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0
 
       {/* Floating Add Button */}
       <button
-        onClick={async () => {
-          const result = await check('transaction');
-          if (!result.allowed) {
-            setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'transaction' });
-            return;
-          }
+        onClick={() => {
           setDefaultType('expense');
           setShowAdd(true);
         }}
@@ -213,11 +206,8 @@ const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0
         defaultType={defaultType}
       />
       <PaywallModal
-        open={paywallInfo.open}
-        onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
-        limitType={paywallInfo.type}
-        current={paywallInfo.current}
-        max={paywallInfo.max}
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
       />
     </>
   );
