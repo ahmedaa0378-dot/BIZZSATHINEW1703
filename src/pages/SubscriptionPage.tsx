@@ -42,7 +42,7 @@ export default function SubscriptionPage() {
 
   const PRICES = {
     pro: { monthly: 499, annual: 4790 },
-    business: { monthly: 799, annual: 6710 },
+    business: { monthly: 699, annual: 6710 },
   };
 
   const handleUpgrade = async (planId: string) => {
