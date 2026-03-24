@@ -95,6 +95,7 @@ export default function OnboardingPage() {
           owner_name: ownerName.trim(),
           business_type: businessType,
           business_category: category,
+          owner_phone: user.phone || null,
           address_line1: address1.trim(),
           address_line2: address2.trim(),
           city: city.trim(),
