@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Users, Shield, Eye, CreditCard as Edit2, Trash2, Phone, Mail, X, Loader2, Check, ChevronDown, UserPlus, Crown, Briefcase, User, Calculator } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
-import { useBusinessStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
 import { useBusinessStore, maxUsers } from '../stores/appStore';
