@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useBusinessStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
+import { useBusinessStore, maxUsers } from '../stores/appStore';
 
 interface TeamMember {
   id: string;
