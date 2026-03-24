@@ -34,29 +34,30 @@ export default function AuthPage() {
   };
 
   // Check if user already has a business and route accordingly
-  const checkBusinessAndNavigate = async (userId: string) => {
-    const { data: biz } = await supabase
-      .from('businesses')
-      .select('id, business_name, business_type, business_category, owner_name, onboarding_completed')
-      .eq('owner_id', userId)
-      .single();
+const checkBusinessAndNavigate = async (userId: string) => {
+  const { data: biz } = await supabase
+    .from('businesses')
+    .select('id, business_name, business_type, business_category, owner_name, onboarding_completed, subscription_tier, trial_ends_at, is_super_admin')
+    .eq('owner_id', userId)
+    .single();
 
-    if (biz && biz.onboarding_completed) {
-      setBusiness({
-  id: biz.id,
-  name: biz.business_name,
-  type: biz.business_type,
-  category: biz.business_category,
-  ownerName: biz.owner_name,
-  subscriptionTier: biz.subscription_tier || 'free',
-  trialEndsAt: biz.trial_ends_at || null,
-});
-      setOnboarded(true);
-      navigate('/');
-    } else {
-      navigate('/onboarding');
-    }
-  };
+  if (biz && biz.onboarding_completed) {
+    setBusiness({
+      id: biz.id,
+      name: biz.business_name,
+      type: biz.business_type,
+      category: biz.business_category,
+      ownerName: biz.owner_name,
+      subscriptionTier: biz.subscription_tier || 'trial',
+      trialEndsAt: biz.trial_ends_at || null,
+      isSuperAdmin: biz.is_super_admin || false,
+    });
+    setOnboarded(true);
+    navigate('/');
+  } else {
+    navigate('/onboarding');
+  }
+};
 
   // ---- EMAIL AUTH ----
   const handleEmailAuth = async () => {
