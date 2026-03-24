@@ -131,18 +131,17 @@ const handleVerifyOTP = async () => {
 
     if (error || !data?.success) throw new Error(data?.error || 'Invalid OTP');
 
-    // Use the magic link token to create a real session
-    const { data: sessionData, error: verifyError } = await supabase.auth.verifyOtp({
+    // Sign in with temp password
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: data.email,
-      token: data.token,
-      type: 'magiclink',
+      password: data.tempPassword,
     });
 
-    if (verifyError) throw verifyError;
+    if (signInError) throw signInError;
 
-    if (sessionData?.user) {
-      setUser({ id: sessionData.user.id, email: sessionData.user.email ?? '' });
-      await checkBusinessAndNavigate(sessionData.user.id);
+    if (signInData?.user) {
+      setUser({ id: signInData.user.id, email: signInData.user.email ?? '' });
+      await checkBusinessAndNavigate(signInData.user.id);
     }
   } catch (err: any) {
     setError(err.message || 'Invalid OTP');
