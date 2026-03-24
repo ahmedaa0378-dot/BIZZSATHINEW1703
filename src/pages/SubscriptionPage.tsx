@@ -41,8 +41,8 @@ export default function SubscriptionPage() {
   const label = planLabel(business);
 
   const PRICES = {
-    pro: { monthly: 299, annual: 2499 },
-    business: { monthly: 699, annual: 5999 },
+    pro: { monthly: 499, annual: 4790 },
+    business: { monthly: 799, annual: 6710 },
   };
 
   const handleUpgrade = async (planId: string) => {
@@ -132,7 +132,7 @@ export default function SubscriptionPage() {
                   : 'text-neutral-500 dark:text-zinc-500')}>
               Annual
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#c8ee44] text-black">
-                Save 30%
+                Save 20%
               </span>
             </button>
           </div>
