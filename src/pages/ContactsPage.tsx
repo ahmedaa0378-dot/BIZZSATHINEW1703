@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import AddContactModal from '../components/contacts/AddContactModal';
 import ContactDetailSheet from '../components/contacts/ContactDetailSheet';
 import PageWrapper from '../components/layout/PageWrapper';
-import { usePaywall } from '../lib/paywall';
 import PaywallModal from '../components/shared/PaywallModal';
 
 type Filter = 'all' | 'customer' | 'supplier';
@@ -22,8 +21,7 @@ export default function ContactsPage() {
   const { contacts, fetchContacts } = useContactStore();
   const { business } = useBusinessStore();
   const navigate = useNavigate();
-  const { check } = usePaywall();
-  const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   useEffect(() => {
     if (business?.id) fetchContacts(business.id);
@@ -121,12 +119,7 @@ export default function ContactsPage() {
             </p>
             {!search && (
               <button
-                onClick={async () => {
-                  const result = await check('contact');
-                  if (!result.allowed) {
-                    setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'contact' });
-                    return;
-                  }
+                onClick={() => {
                   setShowAdd(true);
                 }}
                 className="mt-1 px-5 py-2 rounded-xl bg-accent text-black text-xs font-semibold
@@ -196,12 +189,7 @@ export default function ContactsPage() {
 
       {/* FAB */}
       <button
-        onClick={async () => {
-          const result = await check('contact');
-          if (!result.allowed) {
-            setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'contact' });
-            return;
-          }
+        onClick={() => {
           setEditContact(null);
           setShowAdd(true);
         }}
@@ -228,11 +216,8 @@ export default function ContactsPage() {
       />
 
       <PaywallModal
-        open={paywallInfo.open}
-        onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
-        limitType={paywallInfo.type}
-        current={paywallInfo.current}
-        max={paywallInfo.max}
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
       />
 
       {/* Detail Sheet */}
