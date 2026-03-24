@@ -128,17 +128,22 @@ const handleVerifyOTP = async () => {
         session_id: sessionId,
       },
     });
+
     if (error || !data?.success) throw new Error(data?.error || 'Invalid OTP');
 
-    // Sign in the user
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // Use the magic link token to create a real session
+    const { data: sessionData, error: verifyError } = await supabase.auth.verifyOtp({
       email: data.email,
-      password: data.userId,
+      token: data.token,
+      type: 'magiclink',
     });
 
-    // If signIn fails (new user), use admin-created session differently
-    setUser({ id: data.userId, email: data.email });
-    await checkBusinessAndNavigate(data.userId);
+    if (verifyError) throw verifyError;
+
+    if (sessionData?.user) {
+      setUser({ id: sessionData.user.id, email: sessionData.user.email ?? '' });
+      await checkBusinessAndNavigate(sessionData.user.id);
+    }
   } catch (err: any) {
     setError(err.message || 'Invalid OTP');
   } finally {
