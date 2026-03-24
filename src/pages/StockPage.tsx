@@ -6,7 +6,6 @@ import { useBusinessStore } from '../stores/appStore';
 import AddProductModal from '../components/stock/AddProductModal';
 import StockAdjustModal from '../components/stock/StockAdjustModal';
 import { useTranslation } from '../lib/i18n';
-import { usePaywall } from '../lib/paywall';
 import PaywallModal from '../components/shared/PaywallModal';
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; text: string; bg: string }> = {
@@ -29,8 +28,7 @@ export default function StockPage() {
   const { t } = useTranslation();
   const { products, summary, categories, fetchProducts, fetchSummary, deleteProduct } = useProductStore();
   const { business } = useBusinessStore();
-  const { check } = usePaywall();
-  const [paywallInfo, setPaywallInfo] = useState({ open: false, current: 0, max: 0, type: '' });
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   useEffect(() => {
     if (business?.id) {
@@ -144,12 +142,7 @@ export default function StockPage() {
               {search ? 'Try different search' : 'Add your first product to track inventory'}
             </p>
             {!search && (
-              <button onClick={async () => {
-                  const result = await check('product');
-                  if (!result.allowed) {
-                    setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'product' });
-                    return;
-                  }
+              <button onClick={() => {
                   setShowAdd(true);
                 }}
                 className="mt-1 px-5 py-2 rounded-xl bg-accent text-black text-xs font-semibold active:scale-95 transition-transform">
@@ -218,12 +211,7 @@ export default function StockPage() {
       </div>
 
       {/* FAB */}
-      <button onClick={async () => {
-        const result = await check('product');
-        if (!result.allowed) {
-          setPaywallInfo({ open: true, current: result.current, max: result.max, type: 'product' });
-          return;
-        }
+      <button onClick={() => {
         setEditProduct(null);
         setShowAdd(true);
       }}
@@ -241,11 +229,8 @@ export default function StockPage() {
       />
 
       <PaywallModal
-        open={paywallInfo.open}
-        onClose={() => setPaywallInfo({ ...paywallInfo, open: false })}
-        limitType={paywallInfo.type}
-        current={paywallInfo.current}
-        max={paywallInfo.max}
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
       />
 
       {/* Stock Adjust */}
