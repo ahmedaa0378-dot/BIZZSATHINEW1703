@@ -66,7 +66,7 @@ export function maxUsers(business: BusinessStore['business']): number {
 export function planLabel(business: BusinessStore['business']): string {
   if (!business) return 'Trial';
   if (business.subscriptionTier === 'pro') return 'Pro';
-  if (business.subscriptionTier === 'business') return 'business';
+  if (business.subscriptionTier === 'business') return 'Business';
   const days = trialDaysLeft(business);
   if (days > 0) return `Trial — ${days}d left`;
   return 'Trial Expired';
