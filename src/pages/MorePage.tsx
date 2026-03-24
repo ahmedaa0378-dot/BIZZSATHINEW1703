@@ -98,9 +98,8 @@ export default function MorePage() {
           </div>
         </div>
        {business?.trialEndsAt && (
-  {/* Plan Badge */}
-<div className="relative z-10 mt-4 flex items-center justify-between gap-2 px-3 py-2 rounded-xl 
-  bg-accent/10 dark:bg-accent/10 border border-accent/20">
+{/* Plan Badge */}
+<div className="relative z-10 mt-4 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-accent/10 dark:bg-accent/10 border border-accent/20">
   <div className="flex items-center gap-2">
     <Sparkles size={14} className="text-accent-dark dark:text-accent" />
     <span className="text-xs font-semibold text-accent-dark dark:text-accent">
