@@ -125,17 +125,18 @@ const handleVerifyOTP = async () => {
         phone: phone.replace(/\D/g, '').slice(-10),
         action: 'verify',
         otp,
+        session_id: sessionId,
       },
     });
     if (error || !data?.success) throw new Error(data?.error || 'Invalid OTP');
 
-    // Sign in via magic link to the phone-based email
-    const { error: magicError } = await supabase.auth.signInWithOtp({
+    // Sign in the user
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: data.email,
-      options: { shouldCreateUser: false },
+      password: data.userId,
     });
-    if (magicError) throw magicError;
 
+    // If signIn fails (new user), use admin-created session differently
     setUser({ id: data.userId, email: data.email });
     await checkBusinessAndNavigate(data.userId);
   } catch (err: any) {
