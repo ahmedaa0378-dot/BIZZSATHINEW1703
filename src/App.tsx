@@ -30,6 +30,7 @@ import LegalPage from './pages/LegalPage';
 import RemindersPage from './pages/RemindersPage';
 import HelpPage from './pages/HelpPage';
 import { Loader2 } from 'lucide-react';
+import { hasAccess } from './stores/appStore'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isOnboarded } = useAuthStore();
