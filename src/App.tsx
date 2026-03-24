@@ -110,7 +110,7 @@ export default function App() {
 
           const { data: biz } = await supabase
             .from('businesses')
-            .select('id, business_name, business_type, business_category, owner_name, onboarding_completed, subscription_tier, trial_ends_at')
+            .select('id, business_name, business_type, business_category, owner_name, onboarding_completed, subscription_tier, trial_ends_at, is_super_admin')
             .eq('owner_id', session.user.id)
             .single();
 
