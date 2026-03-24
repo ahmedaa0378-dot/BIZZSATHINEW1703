@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [sessionId, setSessionId] = useState('');
 
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
