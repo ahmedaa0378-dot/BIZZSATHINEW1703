@@ -2,13 +2,13 @@ import {
   Building2, CreditCard, FileText, Bell, Sun, Moon,
   HelpCircle, Info, LogOut, ChevronRight, Sparkles,
   Users, BarChart3, Megaphone, MapPin, MessageCircle,
-  Crown, Shield, Zap, UserPlus,
+  Crown, Zap, UserPlus,
 } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { useAuthStore, useBusinessStore, planLabel, hasAccess, trialDaysLeft } from '../stores/appStore';
+import { useAuthStore, useBusinessStore, planLabel, hasAccess } from '../stores/appStore';
 
 interface MenuItem {
   icon: typeof Building2;
@@ -19,7 +19,7 @@ interface MenuItem {
 }
 
 export default function MorePage() {
-  const { theme, setTheme, isDark } = useThemeStore();
+  const { setTheme, isDark } = useThemeStore();
   const { logout } = useAuthStore();
   const { business } = useBusinessStore();
   const navigate = useNavigate();
@@ -70,7 +70,7 @@ export default function MorePage() {
       items: [
         { icon: HelpCircle, label: 'Help & Support', action: () => navigate('/help') },
         { icon: FileText, label: 'Terms & Privacy', action: () => navigate('/legal') },
-{ icon: Info, label: 'About BizzSathi', action: () => window.open('https://bizzsathi.com', '_blank'), rightText: 'v1.0.0' },
+        { icon: Info, label: 'About BizzSathi', action: () => window.open('https://bizzsathi.com', '_blank'), rightText: 'v1.0.0' },
       ],
     },
     {
@@ -83,10 +83,11 @@ export default function MorePage() {
 
   return (
     <div className="px-4 pt-3 pb-4 space-y-5 animate-fade-in">
+
       {/* Profile Hero Card */}
       <div className="premium-card p-5">
         <div className="relative z-10 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#c8ee44] to-[#a3c428] 
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#c8ee44] to-[#a3c428]
             flex items-center justify-center shadow-glow-green flex-shrink-0">
             <span className="text-black text-lg font-bold">
               {(business?.ownerName || 'AK').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -97,24 +98,23 @@ export default function MorePage() {
             <p className="text-sm text-neutral-500 dark:text-zinc-400">{business?.name || 'Khan General Store'}</p>
           </div>
         </div>
-       {business?.trialEndsAt && (
-{/* Plan Badge */}
-<div className="relative z-10 mt-4 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-accent/10 dark:bg-accent/10 border border-accent/20">
-  <div className="flex items-center gap-2">
-    <Sparkles size={14} className="text-accent-dark dark:text-accent" />
-    <span className="text-xs font-semibold text-accent-dark dark:text-accent">
-      {planLabel(business)}
-    </span>
-  </div>
-  {!hasAccess(business) && (
-    <button
-      onClick={() => navigate('/subscription')}
-      className="px-2.5 py-1 rounded-lg bg-[#c8ee44] text-black text-[10px] font-bold">
-      Upgrade
-    </button>
-  )}
-</div>
-)}
+
+        {/* Plan Badge */}
+        <div className="relative z-10 mt-4 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-accent/10 dark:bg-accent/10 border border-accent/20">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-accent-dark dark:text-accent" />
+            <span className="text-xs font-semibold text-accent-dark dark:text-accent">
+              {planLabel(business)}
+            </span>
+          </div>
+          {!hasAccess(business) && (
+            <button
+              onClick={() => navigate('/subscription')}
+              className="px-2.5 py-1 rounded-lg bg-[#c8ee44] text-black text-[10px] font-bold">
+              Upgrade
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Theme Toggle Card */}
