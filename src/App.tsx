@@ -33,14 +33,21 @@ import { Loader2 } from 'lucide-react';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isOnboarded } = useAuthStore();
+  const { business } = useBusinessStore();
   const location = useLocation();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  if (!isOnboarded && location.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />;
 
-  if (!isOnboarded && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
+  // If trial expired and not on paid plan, redirect to subscription
+  // Allow /subscription itself so user can upgrade
+  if (
+    business &&
+    !hasAccess(business) &&
+    location.pathname !== '/subscription' &&
+    location.pathname !== '/settings/preferences'
+  ) {
+    return <Navigate to="/subscription" replace />;
   }
 
   return <>{children}</>;
