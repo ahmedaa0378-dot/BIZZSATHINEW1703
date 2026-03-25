@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ArrowRight, ArrowLeft, MapPin, Loader2, Check,
+  ArrowRight, ArrowLeft, Loader2, Check,
   Store, Warehouse, Wrench, Factory, ChevronDown, LocateFixed,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -39,6 +39,7 @@ export default function OnboardingPage() {
   // Step 2
   const [businessName, setBusinessName] = useState('');
   const [ownerName, setOwnerName] = useState('');
+  const [phone, setPhone] = useState('');
 
   // Step 3
   const [businessType, setBusinessType] = useState('');
@@ -60,7 +61,7 @@ export default function OnboardingPage() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return true; // Welcome step
+      case 1: return true;
       case 2: return businessName.trim() && ownerName.trim();
       case 3: return businessType && category;
       case 4: return city.trim() && state.trim();
@@ -86,7 +87,11 @@ export default function OnboardingPage() {
     if (!user) return;
     setLoading(true);
     try {
-      // Create business
+      // Determine owner phone
+      const ownerPhone = user.email?.includes('@phone.bizzsathi.com')
+        ? user.email.replace('@phone.bizzsathi.com', '')
+        : (phone.trim() || null);
+
       const { data: biz, error: bizError } = await supabase
         .from('businesses')
         .insert({
@@ -94,9 +99,9 @@ export default function OnboardingPage() {
           business_name: businessName.trim(),
           owner_name: ownerName.trim(),
           owner_email: user.email || null,
+          owner_phone: ownerPhone,
           business_type: businessType,
           business_category: category,
-          owner_phone: user.phone || null,
           address_line1: address1.trim(),
           address_line2: address2.trim(),
           city: city.trim(),
@@ -104,17 +109,16 @@ export default function OnboardingPage() {
           pincode: pincode.trim(),
           latitude: lat,
           longitude: lng,
-          onboarding_completed: true, subscription_tier: 'trial', trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          owner_phone: user.email?.includes('@phone.bizzsathi.com')
-  ? user.email.replace('@phone.bizzsathi.com', '')
-  : null,
+          onboarding_completed: true,
+          subscription_tier: 'trial',
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
 
       if (bizError) throw bizError;
 
-      // Update user profile with business_id
+      // Update user profile
       await supabase
         .from('user_profiles')
         .update({
@@ -126,15 +130,16 @@ export default function OnboardingPage() {
       // Seed default categories & payment methods
       await supabase.rpc('seed_default_data', { p_business_id: biz.id });
 
-setBusiness({
-  id: biz.id,
-  name: biz.business_name,
-  type: biz.business_type,
-  category: biz.business_category,
-  ownerName: biz.owner_name,
-  subscriptionTier: 'trial',
-  trialEndsAt: biz.trial_ends_at,
-});
+      setBusiness({
+        id: biz.id,
+        name: biz.business_name,
+        type: biz.business_type,
+        category: biz.business_category,
+        ownerName: biz.owner_name,
+        subscriptionTier: 'trial',
+        trialEndsAt: biz.trial_ends_at,
+        isSuperAdmin: false,
+      });
       setOnboarded(true);
       navigate('/');
     } catch (err: any) {
@@ -155,12 +160,10 @@ setBusiness({
           <div className="flex items-center gap-2">
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex-1 h-1 rounded-full overflow-hidden bg-neutral-200 dark:bg-white/10">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all duration-500',
-                    s <= step ? 'bg-accent w-full' : 'w-0'
-                  )}
-                />
+                <div className={cn(
+                  'h-full rounded-full transition-all duration-500',
+                  s <= step ? 'bg-accent w-full' : 'w-0'
+                )} />
               </div>
             ))}
           </div>
@@ -205,6 +208,7 @@ setBusiness({
                       focus:ring-2 focus:ring-[#c8ee44]/50 focus:border-[#c8ee44] outline-none transition-all"
                   />
                 </div>
+
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">
                     Owner Name *
@@ -220,6 +224,33 @@ setBusiness({
                       focus:ring-2 focus:ring-[#c8ee44]/50 focus:border-[#c8ee44] outline-none transition-all"
                   />
                 </div>
+
+                {/* Phone — only show for non-phone signups */}
+                {!user?.email?.includes('@phone.bizzsathi.com') && (
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">
+                      Phone Number <span className="text-neutral-400 normal-case font-normal">(optional)</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center px-3 py-3 rounded-xl
+                        bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10
+                        text-sm font-semibold text-neutral-700 dark:text-zinc-300 flex-shrink-0">
+                        +91
+                      </div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="9876543210"
+                        maxLength={10}
+                        className="flex-1 px-4 py-3 rounded-xl text-sm font-medium
+                          bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10
+                          text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-zinc-600
+                          focus:ring-2 focus:ring-[#c8ee44]/50 focus:border-[#c8ee44] outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -230,7 +261,6 @@ setBusiness({
               <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">What kind of business?</h2>
               <p className="text-sm text-neutral-500 dark:text-zinc-400 mb-6">This helps us customize your experience</p>
 
-              {/* Type Selection */}
               <div className="grid grid-cols-2 gap-3 mb-5">
                 {BUSINESS_TYPES.map((bt) => {
                   const Icon = bt.icon;
@@ -261,7 +291,6 @@ setBusiness({
                 })}
               </div>
 
-              {/* Category Dropdown */}
               {businessType && (
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-zinc-500 mb-2 block">
@@ -309,7 +338,6 @@ setBusiness({
               <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">Business location</h2>
               <p className="text-sm text-neutral-500 dark:text-zinc-400 mb-6">Where is your business based?</p>
 
-              {/* GPS Button */}
               <button
                 onClick={handleGPS}
                 disabled={locating}
@@ -318,11 +346,7 @@ setBusiness({
                   text-accent-dark dark:text-accent font-semibold text-sm
                   hover:bg-accent/15 active:scale-[0.98] transition-all"
               >
-                {locating ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <LocateFixed size={16} />
-                )}
+                {locating ? <Loader2 size={16} className="animate-spin" /> : <LocateFixed size={16} />}
                 {locating ? 'Detecting location...' : lat ? '📍 Location detected' : 'Auto-detect my location'}
               </button>
 
@@ -330,7 +354,7 @@ setBusiness({
                 <input
                   value={address1} onChange={(e) => setAddress1(e.target.value)}
                   placeholder="Address line 1"
-                  className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5 
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5
                     border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white
                     placeholder:text-neutral-400 dark:placeholder:text-zinc-600
                     focus:ring-2 focus:ring-[#c8ee44]/50 outline-none transition-all"
@@ -338,7 +362,7 @@ setBusiness({
                 <input
                   value={address2} onChange={(e) => setAddress2(e.target.value)}
                   placeholder="Address line 2 (optional)"
-                  className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5 
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5
                     border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white
                     placeholder:text-neutral-400 dark:placeholder:text-zinc-600
                     focus:ring-2 focus:ring-[#c8ee44]/50 outline-none transition-all"
@@ -347,7 +371,7 @@ setBusiness({
                   <input
                     value={city} onChange={(e) => setCity(e.target.value)}
                     placeholder="City *"
-                    className="px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5 
+                    className="px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5
                       border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white
                       placeholder:text-neutral-400 dark:placeholder:text-zinc-600
                       focus:ring-2 focus:ring-[#c8ee44]/50 outline-none transition-all"
@@ -356,7 +380,7 @@ setBusiness({
                     value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="Pincode"
                     maxLength={6}
-                    className="px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5 
+                    className="px-4 py-3 rounded-xl text-sm font-medium bg-neutral-50 dark:bg-white/5
                       border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white
                       placeholder:text-neutral-400 dark:placeholder:text-zinc-600
                       focus:ring-2 focus:ring-[#c8ee44]/50 outline-none transition-all"
