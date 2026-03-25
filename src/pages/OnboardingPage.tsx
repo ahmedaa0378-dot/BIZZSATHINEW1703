@@ -93,6 +93,7 @@ export default function OnboardingPage() {
           owner_id: user.id,
           business_name: businessName.trim(),
           owner_name: ownerName.trim(),
+          owner_email: user.email || null,
           business_type: businessType,
           business_category: category,
           owner_phone: user.phone || null,
