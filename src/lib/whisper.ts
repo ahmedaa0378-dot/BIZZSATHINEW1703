@@ -19,8 +19,9 @@ export class WhisperRecorder {
   onInterim?: (text: string) => void;
   onStateChange?: (state: 'idle' | 'recording' | 'processing') => void;
 
-  async startRecording(language: string = 'hi'): Promise<void> {
+async startRecording(language: string = 'en'): Promise<void> {
     try {
+      this.language = language;
       this.audioChunks = [];
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
