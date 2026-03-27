@@ -148,7 +148,14 @@ export async function getVoiceResponse(
   conversationHistory: VoiceConversationMessage[]
 ): Promise<VoiceAIResponse> {
   try {
-    const data = await proxyChat(conversationHistory, {
+    // Keep system prompt (first message) + last 10 messages to prevent token overflow
+    const systemMsg = conversationHistory[0];
+    const recentMsgs = conversationHistory.slice(-10);
+    const truncatedHistory = systemMsg?.role === 'system'
+      ? [systemMsg, ...recentMsgs.filter(m => m.role !== 'system')]
+      : recentMsgs;
+
+    const data = await proxyChat(truncatedHistory, {
       temperature: 0.3,
       max_tokens: 300,
     });
