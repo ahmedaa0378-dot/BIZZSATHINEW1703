@@ -76,8 +76,25 @@ export default function BusinessProfilePage() {
     setInitialLoading(false);
   };
 
-  const handleSave = async () => {
+const handleSave = async () => {
     if (!business?.id) return;
+
+    // Validate fields
+    if (!businessName.trim()) { toast.error('Business name is required'); return; }
+    if (!ownerName.trim()) { toast.error('Owner name is required'); return; }
+
+    const gstinErr = validateGSTIN(gstin.trim());
+    if (gstinErr) { toast.error(gstinErr); return; }
+
+    const ifscErr = validateIFSC(bankIfsc.trim());
+    if (ifscErr) { toast.error(ifscErr); return; }
+
+    const pincodeErr = validatePincode(pincode.trim());
+    if (pincodeErr) { toast.error(pincodeErr); return; }
+
+    const upiErr = validateUPI(upiId.trim());
+    if (upiErr) { toast.error(upiErr); return; }
+
     setLoading(true);
 
     const { error } = await supabase
