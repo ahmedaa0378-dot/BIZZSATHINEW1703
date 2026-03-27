@@ -140,6 +140,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
     if (error) {
       console.error('Add transaction error:', error);
+      toast.error('Failed to save transaction. Please try again.');
       return null;
     }
 
