@@ -180,6 +180,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/auth" element={<GuestGuard><AuthPage /></GuestGuard>} />
         <Route path="/onboarding" element={<AuthGuard><OnboardingPage /></AuthGuard>} />
