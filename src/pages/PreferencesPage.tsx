@@ -20,7 +20,6 @@ export default function PreferencesPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleExport = async () => {
     if (!business?.id) return;
