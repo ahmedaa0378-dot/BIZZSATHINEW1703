@@ -175,6 +175,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
     if (error) {
       console.error('Stock adjust error:', error);
+      toast.error('Failed to adjust stock. Please try again.');
       return false;
     }
 
