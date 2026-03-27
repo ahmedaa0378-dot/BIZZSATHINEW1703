@@ -61,6 +61,7 @@ export const useContactStore = create<ContactStore>((set, get) => ({
     set({ loading: false });
     if (error) {
       console.error('Add contact error:', error);
+      toast.error('Failed to add contact.');
       return null;
     }
     set({ contacts: [...get().contacts, data as Contact].sort((a, b) => a.name.localeCompare(b.name)) });
