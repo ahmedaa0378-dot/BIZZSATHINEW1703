@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { useBusinessStore, maxUsers } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
+import { validatePhone, validateEmail } from '../lib/validators';
+import { toast } from '../stores/toastStore';
 
 interface TeamMember {
   id: string;
