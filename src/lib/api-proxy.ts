@@ -54,10 +54,12 @@ export async function proxyChatStream(
       stream: true,
     }),
   });
-if (!res.ok) {
+
+  if (!res.ok) {
     const err = await res.text().catch(() => 'Unknown error');
     throw new Error(`Proxy stream error: ${err}`);
   }
+
   const reader = res.body?.getReader();
   const decoder = new TextDecoder();
   let fullText = '';
@@ -79,8 +81,7 @@ if (!res.ok) {
         } catch {}
       }
     }
-  }  const reader = res.body?.getReader();
-
+  }
 
   return fullText;
 }
