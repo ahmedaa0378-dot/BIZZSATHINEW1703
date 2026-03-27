@@ -8,6 +8,8 @@ import { supabase } from '../lib/supabase';
 import { useBusinessStore, useAuthStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
+import { validateGSTIN, validateIFSC, validatePincode, validateUPI } from '../lib/validators';
+import { toast } from '../stores/toastStore';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi',
