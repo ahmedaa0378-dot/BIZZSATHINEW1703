@@ -35,13 +35,13 @@ function getLanguageInstruction(lang: string): string {
   }
 }
 
-function getGreetingExample(lang: string, ownerName: string): string {
+ffunction getGreetingExample(lang: string, ownerName: string): string {
   switch (lang) {
-    case 'hi': return `"Good Morning ${ownerName} ji! Main aapka business assistant hoon. Aap mujhse income add karna, expense add karna, contact banana, invoice banwana, ya business query pooch sakte hain. Batayein, kya karna hai?"`;
-    case 'te': return `"Good Morning ${ownerName} garu! Nenu mee business assistant ni. Income add cheyyadam, expense add cheyyadam, contact create cheyyadam, invoice generate cheyyadam — emi cheyamantaru?"`;
-    case 'ta': return `"Good Morning ${ownerName}! Naan unga business assistant. Income add panna, expense add panna, contact create panna, invoice generate panna — enna seyyanum?"`;
-    case 'gu': return `"Good Morning ${ownerName}! Hu tamaro business assistant chu. Income add karvu, expense add karvu, contact banawvu, invoice generate karvu — shu karvu che?"`;
-    default: return `"Good Morning ${ownerName}! I'm your business assistant. You can ask me to add income, add expense, create contact, generate invoice, or check your business data. How can I help?"`;
+    case 'hi': return `"Haan ji ${ownerName}! Boliye, kya karein — sale, kharcha, invoice, ya koi aur kaam?"`;
+    case 'te': return `"Cheppandi ${ownerName} garu! Sale, kharchu, invoice — emi cheyamantaru?"`;
+    case 'ta': return `"Sollunga ${ownerName}! Sale, chelavu, invoice — enna vennum?"`;
+    case 'gu': return `"Bolo ${ownerName}! Sale, kharcho, invoice — shu karvu?"`;
+    default: return `"Yes ${ownerName}! Tell me — sale, expense, invoice, or anything else?"`;
   }
 }
 
