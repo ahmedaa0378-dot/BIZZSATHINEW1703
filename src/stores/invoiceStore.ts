@@ -118,6 +118,7 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
     if (error || !data) {
       set({ loading: false });
       console.error('Create invoice error:', error);
+      toast.error('Failed to create invoice. Please try again.');
       return null;
     }
 
