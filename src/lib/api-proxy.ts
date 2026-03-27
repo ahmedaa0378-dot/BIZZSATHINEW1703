@@ -82,7 +82,7 @@ export async function proxyChatStream(
 }
 
 // ===== WHISPER TRANSCRIPTION =====
-export async function proxyWhisper(audioBlob: Blob, language: string = 'hi'): Promise<string> {
+export async function proxyWhisper(audioBlob: Blob, language: string = 'en'): Promise<string> {
   const ext = audioBlob.type.includes('webm') ? 'webm'
     : audioBlob.type.includes('mp4') ? 'mp4'
     : 'wav';
