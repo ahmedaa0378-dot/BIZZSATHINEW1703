@@ -67,7 +67,7 @@ export function maxUsers(business: BusinessStore['business']): number {
 // Display label for current plan
 export function planLabel(business: BusinessStore['business']): string {
   if (!business) return 'Trial';
-  if ((business as any).isSuperAdmin) return '⚡ Super Admin';
+  if (business.isSuperAdmin) return '⚡ Super Admin';
   if (business.subscriptionTier === 'pro') return 'Pro';
   if (business.subscriptionTier === 'business') return 'Business';
   const days = trialDaysLeft(business);
