@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   ArrowLeft, Globe, Sun, Moon, Monitor, Volume2, VolumeX,
-  Download, Loader2, Check, Trash2, AlertTriangle,
+  Download, Loader2, Check, LogOut,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useThemeStore } from '../stores/themeStore';
