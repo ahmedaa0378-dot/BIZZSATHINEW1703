@@ -35,7 +35,7 @@ function getLanguageInstruction(lang: string): string {
   }
 }
 
-ffunction getGreetingExample(lang: string, ownerName: string): string {
+function getGreetingExample(lang: string, ownerName: string): string {
   switch (lang) {
     case 'hi': return `"Haan ji ${ownerName}! Boliye, kya karein — sale, kharcha, invoice, ya koi aur kaam?"`;
     case 'te': return `"Cheppandi ${ownerName} garu! Sale, kharchu, invoice — emi cheyamantaru?"`;
