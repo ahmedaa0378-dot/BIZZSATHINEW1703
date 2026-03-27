@@ -14,6 +14,7 @@ export class WhisperRecorder {
   private audioChunks: Blob[] = [];
   private stream: MediaStream | null = null;
   private timeoutId: any = null;
+  private language: string = 'en';
 
   onInterim?: (text: string) => void;
   onStateChange?: (state: 'idle' | 'recording' | 'processing') => void;
