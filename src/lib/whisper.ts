@@ -91,7 +91,7 @@ export class WhisperRecorder {
           }
 
           // Use proxy instead of direct API call
-          const transcript = await proxyWhisper(audioBlob, 'hi');
+          const transcript = await proxyWhisper(audioBlob, language);
           this.cleanup();
           resolve(transcript);
         } catch (err) {
