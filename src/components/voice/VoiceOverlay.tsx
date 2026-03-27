@@ -266,7 +266,10 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = LANG_CODES[language] || 'en-IN';
-  utterance.rate = 0.9;
+  utterance.rate = 1.15;
+  utterance.pitch = 1.0;
+  const indianVoice = getIndianVoice();
+  if (indianVoice) utterance.voice = indianVoice;
   setListenState('speaking');
 
   const afterSpeak = () => {
