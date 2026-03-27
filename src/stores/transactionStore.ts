@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { toast } from './toastStore';
 
 export interface Transaction {
   id: string;
