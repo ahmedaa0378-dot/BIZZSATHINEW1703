@@ -93,7 +93,7 @@ async startRecording(language: string = 'en'): Promise<void> {
           }
 
           // Use proxy instead of direct API call
-          const transcript = await proxyWhisper(audioBlob, language);
+          const transcript = await proxyWhisper(audioBlob, this.language);
           this.cleanup();
           resolve(transcript);
         } catch (err) {
