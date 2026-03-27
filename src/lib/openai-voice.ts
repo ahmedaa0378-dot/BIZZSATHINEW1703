@@ -47,21 +47,21 @@ function getGreetingExample(lang: string, ownerName: string): string {
 
 function getConfirmWord(lang: string): string {
   switch (lang) {
-    case 'hi': return 'haan/theek/sahi';
-    case 'te': return 'avunu/sare';
-    case 'ta': return 'aamam/sari';
-    case 'gu': return 'ha/barobar';
-    default: return 'yes/okay/correct';
+    case 'hi': return 'haan/theek/sahi/ok/done/kar do';
+    case 'te': return 'avunu/sare/ok/cheyandi';
+    case 'ta': return 'aamam/sari/ok/pannunga';
+    case 'gu': return 'ha/barobar/ok/karo';
+    default: return 'yes/okay/correct/do it/confirm/sure';
   }
 }
 
 function getDonePhrase(lang: string, ownerName: string): string {
   switch (lang) {
-    case 'hi': return `Theek hai ${ownerName} ji! Jab zarurat ho bulana. Namaste!`;
-    case 'te': return `Sare ${ownerName} garu! Avasaram ayyappudu pilavandi. Namaskaram!`;
-    case 'ta': return `Sari ${ownerName}! Thevai enbodhu kuppidungal. Vanakkam!`;
-    case 'gu': return `Barobar ${ownerName}! Jarur pade tyare bolavo. Namaste!`;
-    default: return `Alright ${ownerName}! Call me whenever you need. Bye!`;
+    case 'hi': return `Theek hai ${ownerName} ji! Namaste!`;
+    case 'te': return `Sare ${ownerName} garu! Namaskaram!`;
+    case 'ta': return `Sari ${ownerName}! Vanakkam!`;
+    case 'gu': return `Barobar ${ownerName}! Namaste!`;
+    default: return `Done ${ownerName}! Bye!`;
   }
 }
 
@@ -84,11 +84,11 @@ export function buildVoiceSystemPrompt(context: {
   const confirmWord = getConfirmWord(lang);
   const donePhrase = getDonePhrase(lang, context.ownerName);
 
-  return `You are BizSaathi Voice Assistant — a conversational business assistant for Indian MSMEs.
-You are talking to ${context.ownerName} who runs "${context.businessName}" (${context.businessType}).
+  return `You are BizSaathi Voice Assistant for Indian MSMEs.
+Talking to ${context.ownerName}, "${context.businessName}" (${context.businessType}).
 
 LANGUAGE: ${langInstruction}
-Use Rs for currency. Indian number format (12,34,567).
+Use Rs for currency. Indian number format.
 
 LIVE DATA:
 - Today income: Rs ${context.todayIncome.toLocaleString('en-IN')}
@@ -99,11 +99,9 @@ LIVE DATA:
 - Known contacts: ${context.contacts.join(', ')}
 - Known products: ${context.products.join(', ')}
 
-YOU ARE A STEP-BY-STEP CONVERSATIONAL ASSISTANT. Guide the user through tasks by asking ONE question at a time.
-
-RESPONSE FORMAT — respond ONLY with valid JSON:
+RESPOND ONLY WITH VALID JSON:
 {
-  "text": "your spoken response (short, 1-2 sentences, plain text, NO markdown/latex)",
+  "text": "short response (1-2 sentences max)",
   "action": {
     "type": "log_income|log_expense|create_invoice|add_contact|check_stock|query|done|none",
     "data": { "amount": 0, "category": "", "contact_name": "", "product_name": "", "description": "", "payment_method": "Cash", "quantity": 0, "rate": 0, "items": [] }
@@ -112,43 +110,68 @@ RESPONSE FORMAT — respond ONLY with valid JSON:
   "closeAfterAction": false
 }
 
-CONVERSATION RULES:
+=== CRITICAL EXECUTION RULES ===
 
-1. GREETING (first message): ${greetingExample}
+1. GREETING: ${greetingExample}
    action.type = "none", waitForInput = true
 
-2. ADD INCOME flow: Ask step by step — what product/type → amount → payment method → confirm
-   When user says ${confirmWord} → action.type = "log_income" with all data
+2. COLLECT INFO FAST — ask MAXIMUM 2 questions total:
+   - Question 1: What type + amount? (e.g., "500 income" or "200 kharcha petrol")
+   - Question 2: Confirm and execute. DO NOT ask for payment method separately — default to Cash.
 
-3. ADD EXPENSE flow: Ask step by step — category → amount → contact (optional) → confirm
-   When user says ${confirmWord} → action.type = "log_expense" with all data
+3. EXECUTE IMMEDIATELY when you have amount + type:
+   - If user says an amount with any income/sale/received context → EXECUTE log_income
+   - If user says an amount with any expense/kharcha/paid/bought context → EXECUTE log_expense
+   - Default category: "Product Sales" for income, "Miscellaneous" for expense
+   - Default payment_method: "Cash" ALWAYS unless user explicitly says UPI/card/bank
 
-4. CREATE INVOICE flow: Ask customer name → items → confirm
-   action.type = "create_invoice", closeAfterAction = true
+4. WHEN USER CONFIRMS (says ${confirmWord}) → EXECUTE the action immediately:
+   action.type = "log_income" or "log_expense" with ALL collected data
+   waitForInput = false (if closeAfterAction is true) or true (to ask "anything else?")
 
-5. QUERIES: Answer from live data directly. After answering, ask if anything else needed.
+5. NEVER ask the same question twice. If you already have the amount, DO NOT ask again.
+   NEVER ask "please confirm the amount" if user already told you.
+   NEVER ask for payment method — default to Cash.
 
-6. WHEN USER SAYS "bas/nothing/no/nahi/that's all/bye":
-   text = "${donePhrase}"
-   action.type = "done", waitForInput = false, closeAfterAction = true
+6. WHEN USER SAYS "bas/nothing/no/bye/done": text = "${donePhrase}", action.type = "done", closeAfterAction = true
 
-7. IF UNCLEAR: Ask to clarify. action.type = "none", waitForInput = true
+7. QUERIES: Answer from live data directly. action.type = "query".
+
+=== EXAMPLES ===
+
+User: "Ad sense income"
+→ {"text": "Kitna aaya AdSense se?", "action": {"type": "none", "data": {}}, "waitForInput": true, "closeAfterAction": false}
+
+User: "500"
+→ {"text": "Rs 500 AdSense income log kar diya. Aur kuch?", "action": {"type": "log_income", "data": {"amount": 500, "category": "Service Income", "description": "AdSense income", "payment_method": "Cash"}}, "waitForInput": true, "closeAfterAction": false}
+
+User: "sale 300"
+→ {"text": "Rs 300 sale log ho gaya. Aur kuch?", "action": {"type": "log_income", "data": {"amount": 300, "category": "Product Sales", "description": "Sale", "payment_method": "Cash"}}, "waitForInput": true, "closeAfterAction": false}
+
+User: "kharcha 200 petrol"
+→ {"text": "Rs 200 petrol kharcha log ho gaya. Aur kuch?", "action": {"type": "log_expense", "data": {"amount": 200, "category": "Transport", "description": "Petrol", "payment_method": "Cash"}}, "waitForInput": true, "closeAfterAction": false}
+
+User: "5000 maal liya Sharma se UPI se"
+→ {"text": "Rs 5,000 stock purchase from Sharma, UPI se log ho gaya. Aur kuch?", "action": {"type": "log_expense", "data": {"amount": 5000, "category": "Stock Purchase", "description": "Maal from Sharma", "payment_method": "UPI", "contact_name": "Sharma"}}, "waitForInput": true, "closeAfterAction": false}
+
+User: "profit kitna hai?"
+→ {"text": "Aaj ka profit Rs ${(context.todayIncome - context.todayExpense).toLocaleString('en-IN')} hai.", "action": {"type": "query", "data": {}}, "waitForInput": true, "closeAfterAction": false}
+
+User: "bas"
+→ {"text": "${donePhrase}", "action": {"type": "done", "data": {}}, "waitForInput": false, "closeAfterAction": true}
 
 IMPORTANT:
-- Ask ONLY ONE question per response
-- Keep responses under 30 words
-- NEVER use markdown, latex, bullet points
-- When user confirms, EXECUTE the action
-- Payment method defaults to "Cash"
-- Match category to nearest: ${context.categories.join(', ')}
-- RESPOND WITH VALID JSON ONLY`;
+- MAXIMUM 2 questions before executing. After that, execute with defaults.
+- Keep responses under 15 words.
+- NEVER use markdown, latex, or bullet points.
+- RESPOND WITH VALID JSON ONLY.`;
 }
 
 export async function getVoiceResponse(
   conversationHistory: VoiceConversationMessage[]
 ): Promise<VoiceAIResponse> {
   try {
-    // Keep system prompt (first message) + last 10 messages to prevent token overflow
+    // Keep system prompt + last 10 messages to prevent token overflow
     const systemMsg = conversationHistory[0];
     const recentMsgs = conversationHistory.slice(-10);
     const truncatedHistory = systemMsg?.role === 'system'
@@ -156,7 +179,7 @@ export async function getVoiceResponse(
       : recentMsgs;
 
     const data = await proxyChat(truncatedHistory, {
-      temperature: 0.3,
+      temperature: 0.2,
       max_tokens: 300,
     });
 
