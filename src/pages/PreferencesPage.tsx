@@ -174,25 +174,17 @@ const handleSignOut = async () => {
             </button>
           </div>
 
-          {/* Danger Zone */}
+          {/* Sign Out */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-red-400 mb-3">DANGER ZONE</p>
-            <button onClick={handleDeleteAccount}
-              className={cn(
-                'w-full glass-card p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]',
-                showDeleteConfirm ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : ''
-              )}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-400 dark:text-zinc-600 mb-3">ACCOUNT</p>
+            <button onClick={handleSignOut}
+              className="w-full glass-card p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]">
               <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
-                {showDeleteConfirm ? <AlertTriangle size={16} className="text-red-500" /> :
-                  <Trash2 size={16} className="text-red-500" />}
+                <LogOut size={16} className="text-red-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-red-500">
-                  {showDeleteConfirm ? 'Tap again to confirm logout' : 'Delete Account'}
-                </p>
-                <p className="text-xs text-neutral-500 dark:text-zinc-500">
-                  {showDeleteConfirm ? 'This will sign you out' : 'Export data first, then delete'}
-                </p>
+                <p className="text-sm font-semibold text-red-500">Sign Out</p>
+                <p className="text-xs text-neutral-500 dark:text-zinc-500">Sign out of your account</p>
               </div>
             </button>
           </div>
