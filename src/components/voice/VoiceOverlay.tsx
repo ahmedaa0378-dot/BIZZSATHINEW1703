@@ -541,7 +541,7 @@ export default function VoiceOverlay({ open, onClose }: Props) {
         open={paywallOpen}
         onClose={() => setPaywallOpen(false)}
       />
-      <div className="max-w-[430px] mx-auto w-full flex-1 flex flex-col lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
+<div className="max-w-[430px] mx-auto w-full flex-1 flex flex-col overflow-hidden lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
 
         {/* Header — with safe area for iOS notch */}
         <div className="flex items-center justify-between px-4 py-3 pt-[max(12px,env(safe-area-inset-top))] border-b border-neutral-200/60 dark:border-white/5">
