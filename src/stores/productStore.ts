@@ -126,6 +126,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     set({ loading: false });
     if (error) {
       console.error('Add product error:', error);
+            toast.error('Failed to add product. Please try again.');
       return null;
     }
     const p = data as Product;
