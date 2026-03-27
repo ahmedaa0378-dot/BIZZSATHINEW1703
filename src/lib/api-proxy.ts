@@ -52,14 +52,12 @@ export async function proxyChatStream(
       temperature: options?.temperature ?? 0.3,
       max_tokens: options?.max_tokens || 400,
       stream: true,
-}),
+    }),
   });
-
-  if (!res.ok) {
+if (!res.ok) {
     const err = await res.text().catch(() => 'Unknown error');
     throw new Error(`Proxy stream error: ${err}`);
   }
-
   const reader = res.body?.getReader();
   const decoder = new TextDecoder();
   let fullText = '';
