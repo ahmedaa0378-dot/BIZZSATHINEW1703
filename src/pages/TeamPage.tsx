@@ -68,9 +68,24 @@ export default function TeamPage() {
     setLoading(false);
   };
 
-  const handleInvite = async () => {
+const handleInvite = async () => {
     if (!invName.trim() || !business?.id) return;
+
+    // Validation first (before setInviting)
+    const phoneErr = validatePhone(invPhone.trim());
+    if (phoneErr && invPhone.trim()) { toast.error(phoneErr); return; }
+
+    const emailErr = validateEmail(invEmail.trim());
+    if (emailErr && invEmail.trim()) { toast.error(emailErr); return; }
+
+    if (!invPhone.trim() && !invEmail.trim()) {
+      toast.error('Phone or email is required to invite');
+      return;
+    }
+
+    // NOW set loading — all validation passed
     setInviting(true);
+
     const { error } = await supabase.from('team_members').insert({
       business_id: business.id,
       name: invName.trim(),
