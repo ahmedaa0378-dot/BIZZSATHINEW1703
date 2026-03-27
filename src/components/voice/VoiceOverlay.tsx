@@ -208,6 +208,22 @@ setListenState('waiting');
   };
 
   // ===== SPEECH SYNTHESIS =====
+  // Pick best Indian English voice available
+const getIndianVoice = (): SpeechSynthesisVoice | null => {
+  const voices = window.speechSynthesis.getVoices();
+  // Priority: Indian English > Indian Hindi > any Indian > generic English
+  const priorities = [
+    (v: SpeechSynthesisVoice) => v.lang === 'en-IN',
+    (v: SpeechSynthesisVoice) => v.lang === 'hi-IN',
+    (v: SpeechSynthesisVoice) => v.lang.includes('IN'),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith(language === 'hi' ? 'hi' : language === 'te' ? 'te' : language === 'ta' ? 'ta' : language === 'gu' ? 'gu' : 'en'),
+  ];
+  for (const check of priorities) {
+    const match = voices.find(check);
+    if (match) return match;
+  }
+  return null;
+};
 const speakText = (text: string) => {
   if (!('speechSynthesis' in window)) {
     setListenState('waiting');
