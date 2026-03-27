@@ -109,40 +109,32 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
   createInvoice: async (invoice, items) => {
     set({ loading: true });
 
-    // Insert invoice
-    const { data: inv, error: invErr } = await supabase
-      .from('invoices')
-      .insert(invoice)
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('create_invoice_with_items', {
+      p_invoice: invoice,
+      p_items: items,
+    });
 
-    if (invErr || !inv) {
+    if (error || !data) {
       set({ loading: false });
-      console.error('Create invoice error:', invErr);
+      console.error('Create invoice error:', error);
       return null;
     }
 
-    // Insert line items
-    if (items.length > 0) {
-      const itemsWithInvoiceId = items.map((item, i) => ({
-        ...item,
-        invoice_id: inv.id,
-        sort_order: i,
-      }));
-
-      const { error: itemErr } = await supabase
-        .from('invoice_items')
-        .insert(itemsWithInvoiceId);
-
-      if (itemErr) {
-        console.error('Insert items error:', itemErr);
-      }
-    }
+    // Fetch the created invoice with items
+    const { data: inv } = await supabase
+      .from('invoices')
+      .select('*')
+      .eq('id', data)
+      .single();
 
     set({ loading: false });
-    // Prepend to list
-    set({ invoices: [inv as Invoice, ...get().invoices] });
-    return inv as Invoice;
+
+    if (inv) {
+      set({ invoices: [inv as Invoice, ...get().invoices] });
+      return inv as Invoice;
+    }
+
+    return null;
   },
 
   updateInvoiceStatus: async (id, status) => {
