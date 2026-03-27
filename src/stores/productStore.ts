@@ -159,51 +159,26 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     return false;
   },
 
-  adjustStock: async (businessId, productId, type, quantity, notes) => {
-    const product = get().products.find((p) => p.id === productId);
-    if (!product) return false;
+  adjustStock: async (productId, businessId, type, quantity, notes) => {
+    set({ loading: true });
+    
+    const { data, error } = await supabase.rpc('adjust_stock', {
+      p_product_id: productId,
+      p_business_id: businessId,
+      p_type: type,
+      p_quantity: quantity,
+      p_notes: notes || null,
+    });
 
-    const prevStock = Number(product.current_stock);
-    let newStock: number;
+    set({ loading: false });
 
-    if (type === 'in' || type === 'return_in') {
-      newStock = prevStock + quantity;
-    } else if (type === 'out' || type === 'return_out') {
-      newStock = prevStock - quantity;
-    } else if (type === 'adjustment') {
-      newStock = quantity; // Absolute value for adjustment
-    } else {
-      newStock = prevStock - quantity; // Transfer out
+    if (error) {
+      console.error('Stock adjust error:', error);
+      return false;
     }
 
-    newStock = Math.max(0, newStock);
-
-    // Update product stock
-    const { error: updateErr } = await supabase
-      .from('products')
-      .update({ current_stock: newStock })
-      .eq('id', productId);
-
-    if (updateErr) return false;
-
-    // Record movement
-    await supabase.from('stock_movements').insert({
-      business_id: businessId,
-      product_id: productId,
-      type,
-      quantity,
-      previous_stock: prevStock,
-      new_stock: newStock,
-      notes: notes || null,
-    });
-
-    // Update local state
-    set({
-      products: get().products.map((p) =>
-        p.id === productId ? { ...p, current_stock: newStock } : p
-      ),
-    });
-
+    // Refresh products from DB to get accurate state
+    await get().fetchProducts(businessId);
     return true;
   },
 }));
