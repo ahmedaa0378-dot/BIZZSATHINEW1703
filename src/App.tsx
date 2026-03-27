@@ -31,7 +31,7 @@ import RemindersPage from './pages/RemindersPage';
 import HelpPage from './pages/HelpPage';
 import { Loader2 } from 'lucide-react';
 import ToastContainer from './components/shared/ToastContainer';
-import { hasAccess } from './stores/appStore'
+import { hasAccess } from './stores/appStore';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isOnboarded } = useAuthStore();
