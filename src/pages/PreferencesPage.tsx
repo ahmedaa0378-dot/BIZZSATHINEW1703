@@ -66,13 +66,7 @@ export default function PreferencesPage() {
     setExporting(false);
   };
 
-  const handleDeleteAccount = async () => {
-    if (!showDeleteConfirm) {
-      setShowDeleteConfirm(true);
-      setTimeout(() => setShowDeleteConfirm(false), 5000);
-      return;
-    }
-    // Sign out (actual account deletion would need admin API)
+const handleSignOut = async () => {
     await supabase.auth.signOut();
     logout();
     navigate('/auth');
