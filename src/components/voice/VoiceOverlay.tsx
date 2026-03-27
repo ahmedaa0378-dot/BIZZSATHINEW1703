@@ -33,6 +33,12 @@ const LANG_CODES: Record<string, string> = {
   gu: 'gu-IN',
 };
 
+// Detect iOS/iPadOS
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
 export default function VoiceOverlay({ open, onClose }: Props) {
   const [listenState, setListenState] = useState<ListenState>('idle');
   const [bubbles, setBubbles] = useState<ConversationBubble[]>([]);
@@ -41,12 +47,14 @@ export default function VoiceOverlay({ open, onClose }: Props) {
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState('');
   const [useWhisper] = useState(() => !isWebSpeechSupported());
+  const [turnCount, setTurnCount] = useState(0);
 
   const recognitionRef = useRef<any>(null);
   const whisperRef = useRef<WhisperRecorder | null>(null);
   const timeoutRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef(true);
+  const speechUnlockedRef = useRef(false);
   const navigate = useNavigate();
 
   const { categories, paymentMethods, addTransaction, dashboardStats, cashInHand, transactions, fetchTransactions, fetchDashboardStats, fetchCashInHand } = useTransactionStore();
@@ -54,7 +62,6 @@ export default function VoiceOverlay({ open, onClose }: Props) {
   const { contacts } = useContactStore();
   const { business } = useBusinessStore();
   const { language } = useLanguageStore();
-
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -67,6 +74,8 @@ export default function VoiceOverlay({ open, onClose }: Props) {
       setConversationHistory([]);
       setError('');
       setListenState('idle');
+      setTurnCount(0);
+      speechUnlockedRef.current = false;
       setTimeout(() => startConversation(), 300);
     } else {
       isMountedRef.current = false;
@@ -120,9 +129,8 @@ export default function VoiceOverlay({ open, onClose }: Props) {
     setConversationHistory(newHistory);
     setBubbles([{ role: 'assistant', text: response.text }]);
 
-// Don't auto-speak greeting — mobile browsers block it
-// Just show text and wait for user to tap mic
-setListenState('waiting');
+    // Don't auto-speak greeting — mobile browsers block it
+    setListenState('waiting');
   };
 
   const processUserInput = async (userText: string) => {
@@ -131,20 +139,33 @@ setListenState('waiting');
     setBubbles((prev) => [...prev, { role: 'user', text: userText }]);
 
     const userMsg: VoiceConversationMessage = { role: 'user', content: userText };
-    const newHistory = [...conversationHistory, userMsg];
-    setConversationHistory(newHistory);
+    const newTurnCount = turnCount + 1;
+    setTurnCount(newTurnCount);
 
+    // If too many turns (5+), tell AI to just execute with what it has
+    let historyToSend = [...conversationHistory, userMsg];
+    if (newTurnCount >= 5) {
+      historyToSend = [
+        ...historyToSend,
+        {
+          role: 'user' as const,
+          content: 'SYSTEM: You have asked enough questions. Execute the action NOW with whatever data you have. Set action.type to the appropriate action (log_income or log_expense) and fill in the data. Default anything missing to: amount=0, category=Miscellaneous, payment_method=Cash. Do NOT ask another question.'
+        }
+      ];
+    }
+
+    setConversationHistory([...conversationHistory, userMsg]);
     setListenState('processing');
 
-    const response = await getVoiceResponse(newHistory);
+    const response = await getVoiceResponse(historyToSend);
     if (!isMountedRef.current) return;
 
     const assistantMsg: VoiceConversationMessage = { role: 'assistant', content: response.text };
-    const updatedHistory = [...newHistory, assistantMsg];
-    setConversationHistory(updatedHistory);
+    setConversationHistory((prev) => [...prev, assistantMsg]);
 
     setBubbles((prev) => [...prev, { role: 'assistant', text: response.text }]);
 
+    // Execute action if present
     if (response.action && response.action.type !== 'none' && response.action.type !== 'query') {
       await executeAction(response);
     }
@@ -196,109 +217,130 @@ setListenState('waiting');
 
       if (tx) {
         setListenState('success');
+        setTurnCount(0); // Reset turn counter after successful action
         fetchTransactions(business.id);
         const today = new Date().toISOString().split('T')[0];
         fetchDashboardStats(business.id, today, today);
         fetchCashInHand(business.id);
+        window.dispatchEvent(new CustomEvent('bizzsathi:transaction:added'));
       }
     } else if (type === 'create_invoice') {
       onClose();
       setTimeout(() => navigate('/invoices/create'), 300);
+    } else if (type === 'done') {
+      speakText(response.text);
+      setTimeout(() => {
+        if (isMountedRef.current) onClose();
+      }, 2000);
     }
   };
 
   // ===== SPEECH SYNTHESIS =====
+
   // Pick best Indian English voice available
-const getIndianVoice = (): SpeechSynthesisVoice | null => {
-  const voices = window.speechSynthesis.getVoices();
-  // Priority: Indian English > Indian Hindi > any Indian > generic English
-  const priorities = [
-    (v: SpeechSynthesisVoice) => v.lang === 'en-IN',
-    (v: SpeechSynthesisVoice) => v.lang === 'hi-IN',
-    (v: SpeechSynthesisVoice) => v.lang.includes('IN'),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith(language === 'hi' ? 'hi' : language === 'te' ? 'te' : language === 'ta' ? 'ta' : language === 'gu' ? 'gu' : 'en'),
-  ];
-  for (const check of priorities) {
-    const match = voices.find(check);
-    if (match) return match;
-  }
-  return null;
-};
-const speakText = (text: string) => {
-  if (!('speechSynthesis' in window)) {
-    setListenState('waiting');
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = LANG_CODES[language] || 'en-IN';
-  utterance.rate = 1.15;
-  utterance.pitch = 1.0;
-  const indianVoice = getIndianVoice();
-  if (indianVoice) utterance.voice = indianVoice;
-  setListenState('speaking');
-
-  // Fallback timeout — estimate 80ms per character
-  const fallbackMs = Math.max(3000, text.length * 80);
-  const fallbackTimer = setTimeout(() => {
-    if (isMountedRef.current && listenState === 'speaking') {
-      setListenState('waiting');
+  const getIndianVoice = (): SpeechSynthesisVoice | null => {
+    const voices = window.speechSynthesis.getVoices();
+    const priorities = [
+      (v: SpeechSynthesisVoice) => v.lang === 'en-IN',
+      (v: SpeechSynthesisVoice) => v.lang === 'hi-IN',
+      (v: SpeechSynthesisVoice) => v.lang.includes('IN'),
+      (v: SpeechSynthesisVoice) => v.lang.startsWith(
+        language === 'hi' ? 'hi' : language === 'te' ? 'te' :
+        language === 'ta' ? 'ta' : language === 'gu' ? 'gu' : 'en'
+      ),
+    ];
+    for (const check of priorities) {
+      const match = voices.find(check);
+      if (match) return match;
     }
-  }, fallbackMs);
-
-  utterance.onend = () => {
-    clearTimeout(fallbackTimer);
-    if (isMountedRef.current) setListenState('waiting');
-  };
-  utterance.onerror = () => {
-    clearTimeout(fallbackTimer);
-    if (isMountedRef.current) setListenState('waiting');
+    return null;
   };
 
-  window.speechSynthesis.speak(utterance);
-};
-
-const speakAndThenListen = (text: string, shouldListen: boolean) => {
-  if (!('speechSynthesis' in window)) {
-    if (shouldListen) setTimeout(() => startListening(), 500);
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = LANG_CODES[language] || 'en-IN';
-  utterance.rate = 1.15;
-  utterance.pitch = 1.0;
-  const indianVoice = getIndianVoice();
-  if (indianVoice) utterance.voice = indianVoice;
-  setListenState('speaking');
-
-  const afterSpeak = () => {
-    if (isMountedRef.current && shouldListen) {
-      setTimeout(() => {
-        if (isMountedRef.current) startListening();
-      }, 400);
-    } else if (isMountedRef.current) {
+  const speakText = (text: string) => {
+    // On iOS, speechSynthesis is unreliable — skip and go to waiting
+    if (isIOS() || !('speechSynthesis' in window)) {
       setListenState('waiting');
+      return;
     }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = LANG_CODES[language] || 'en-IN';
+    utterance.rate = 1.15;
+    utterance.pitch = 1.0;
+    const indianVoice = getIndianVoice();
+    if (indianVoice) utterance.voice = indianVoice;
+    setListenState('speaking');
+
+    // Fallback timeout — estimate 65ms per character at 1.15x rate
+    const fallbackMs = Math.max(2000, text.length * 65);
+    const fallbackTimer = setTimeout(() => {
+      if (isMountedRef.current) {
+        setListenState('waiting');
+      }
+    }, fallbackMs);
+
+    utterance.onend = () => {
+      clearTimeout(fallbackTimer);
+      if (isMountedRef.current) setListenState('waiting');
+    };
+    utterance.onerror = () => {
+      clearTimeout(fallbackTimer);
+      if (isMountedRef.current) setListenState('waiting');
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
 
-  // Fallback timeout
-  const fallbackMs = Math.max(3000, text.length * 80);
-  const fallbackTimer = setTimeout(() => {
-    afterSpeak();
-  }, fallbackMs);
+  const speakAndThenListen = (text: string, shouldListen: boolean) => {
+    // On iOS, skip speech entirely — just go to listening
+    if (isIOS() || !('speechSynthesis' in window)) {
+      if (shouldListen) {
+        setTimeout(() => {
+          if (isMountedRef.current) startListening();
+        }, 500);
+      } else {
+        setListenState('waiting');
+      }
+      return;
+    }
 
-  utterance.onend = () => {
-    clearTimeout(fallbackTimer);
-    afterSpeak();
-  };
-  utterance.onerror = () => {
-    clearTimeout(fallbackTimer);
-    afterSpeak();
-  };
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = LANG_CODES[language] || 'en-IN';
+    utterance.rate = 1.15;
+    utterance.pitch = 1.0;
+    const indianVoice = getIndianVoice();
+    if (indianVoice) utterance.voice = indianVoice;
+    setListenState('speaking');
 
-  window.speechSynthesis.speak(utterance);
-};
+    const afterSpeak = () => {
+      if (isMountedRef.current && shouldListen) {
+        setTimeout(() => {
+          if (isMountedRef.current) startListening();
+        }, 400);
+      } else if (isMountedRef.current) {
+        setListenState('waiting');
+      }
+    };
+
+    // Fallback timeout
+    const fallbackMs = Math.max(2000, text.length * 65);
+    const fallbackTimer = setTimeout(() => {
+      afterSpeak();
+    }, fallbackMs);
+
+    utterance.onend = () => {
+      clearTimeout(fallbackTimer);
+      afterSpeak();
+    };
+    utterance.onerror = () => {
+      clearTimeout(fallbackTimer);
+      afterSpeak();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   // ===== SPEECH RECOGNITION (Web Speech API or Whisper fallback) =====
   const startListening = () => {
@@ -363,7 +405,6 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
   const startWebSpeechListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      // Should not happen since we checked, but just in case fall back to Whisper
       startWhisperListening();
       return;
     }
@@ -461,13 +502,11 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
       recognition.start();
     } catch (e) {
       console.error('Recognition start error:', e);
-      // Fall back to Whisper if Web Speech fails to start
       startWhisperListening();
     }
   };
 
   const stopListening = () => {
-    // Stop Web Speech
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -476,7 +515,6 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
       try { recognitionRef.current.stop(); } catch {}
       recognitionRef.current = null;
     }
-    // Stop Whisper
     if (whisperRef.current) {
       whisperRef.current.cancel();
       whisperRef.current = null;
@@ -486,7 +524,6 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
   const handleMicTap = async () => {
     if (listenState === 'listening') {
       if (useWhisper && whisperRef.current?.isRecording()) {
-        // For Whisper: stop recording and process
         await stopWhisperListening();
       } else {
         stopListening();
@@ -506,8 +543,8 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
       />
       <div className="max-w-[430px] mx-auto w-full flex-1 flex flex-col lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200/60 dark:border-white/5">
+        {/* Header — with safe area for iOS notch */}
+        <div className="flex items-center justify-between px-4 py-3 pt-[max(12px,env(safe-area-inset-top))] border-b border-neutral-200/60 dark:border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#c8ee44] to-[#a3c428] flex items-center justify-center">
               <Volume2 size={16} className="text-black" />
@@ -533,8 +570,8 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
           </button>
         </div>
 
-        {/* Conversation */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        {/* Conversation — scrollable with bottom padding for mic area */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 pb-2 space-y-3">
           {bubbles.map((b, i) => (
             <div key={i} className={cn('flex items-start gap-2.5', b.role === 'user' && 'flex-row-reverse')}>
               {b.role === 'assistant' && (
@@ -588,10 +625,13 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
               </div>
             </div>
           )}
+
+          {/* Spacer so last message isn't hidden behind mic */}
+          <div className="h-2" />
         </div>
 
-        {/* Bottom Mic Area */}
-        <div className="px-4 py-5 border-t border-neutral-200/60 dark:border-white/5 flex flex-col items-center gap-3">
+        {/* Bottom Mic Area — with safe area for iOS home bar */}
+        <div className="shrink-0 px-4 py-4 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-neutral-200/60 dark:border-white/5 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-lg flex flex-col items-center gap-2.5">
 
           <p className={cn('text-xs font-medium',
             listenState === 'listening' ? 'text-red-500 animate-pulse' :
@@ -599,7 +639,7 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
             listenState === 'success' ? 'text-emerald-500' :
             'text-neutral-400 dark:text-zinc-600')}>
             {listenState === 'listening' ? (
-              useWhisper 
+              useWhisper
                 ? (language === 'hi' ? '🎙️ रिकॉर्डिंग... रोकने के लिए टैप करें' : '🎙️ Recording... tap to stop')
                 : (language === 'hi' ? 'सुन रहा हूं... बोलिए' : 'Listening... speak now')
             ) :
@@ -639,8 +679,15 @@ const speakAndThenListen = (text: string, shouldListen: boolean) => {
             <p className="text-xs text-red-500 text-center">{error}</p>
           )}
 
+          {/* iOS indicator */}
+          {isIOS() && listenState !== 'error' && (
+            <p className="text-[10px] text-neutral-400 dark:text-zinc-600">
+              Text mode — tap mic to speak
+            </p>
+          )}
+
           {/* Whisper mode indicator */}
-          {useWhisper && listenState !== 'error' && (
+          {useWhisper && !isIOS() && listenState !== 'error' && (
             <p className="text-[10px] text-neutral-400 dark:text-zinc-600">
               Using enhanced voice mode
             </p>
