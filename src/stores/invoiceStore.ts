@@ -155,7 +155,7 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
       .update(updates)
       .eq('id', id);
 
-    if (!error) {
+if (!error) {
       set({
         invoices: get().invoices.map((i) =>
           i.id === id ? { ...i, ...updates } : i
@@ -163,6 +163,7 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
       });
       return true;
     }
+    toast.error('Failed to update invoice status.');
     return false;
   },
 
