@@ -571,7 +571,7 @@ export default function VoiceOverlay({ open, onClose }: Props) {
         </div>
 
         {/* Conversation — scrollable with bottom padding for mic area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 pb-2 space-y-3">
+<div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-2 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
           {bubbles.map((b, i) => (
             <div key={i} className={cn('flex items-start gap-2.5', b.role === 'user' && 'flex-row-reverse')}>
               {b.role === 'assistant' && (
