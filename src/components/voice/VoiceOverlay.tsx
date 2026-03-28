@@ -11,7 +11,6 @@ import { useContactStore } from '../../stores/contactStore';
 import { useBusinessStore } from '../../stores/appStore';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useNavigate } from 'react-router-dom';
-import PaywallModal from '../shared/PaywallModal';
 
 interface Props {
   open: boolean;
@@ -42,7 +41,6 @@ const isIOS = () => {
 export default function VoiceOverlay({ open, onClose }: Props) {
   const [listenState, setListenState] = useState<ListenState>('idle');
   const [bubbles, setBubbles] = useState<ConversationBubble[]>([]);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<VoiceConversationMessage[]>([]);
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState('');
@@ -540,11 +538,6 @@ return (
       className="fixed inset-0 z-[200] bg-surface-light dark:bg-surface-dark"
       style={{ height: '100dvh', height: '100vh' }}
     >
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-      />
-
       {/* Use absolute positioning — NOT flexbox. iOS Safari breaks with flex + overflow in fixed containers. */}
       <div className="absolute inset-0 max-w-[430px] mx-auto w-full lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
 
