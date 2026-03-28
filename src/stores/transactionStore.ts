@@ -154,7 +154,7 @@ cashInHand: 0,
     return data as Transaction;
   },
 
-  deleteTransaction: async (id: string) => {
+deleteTransaction: async (id: string) => {
     const { error } = await supabase
       .from('transactions')
       .delete()
@@ -165,5 +165,28 @@ cashInHand: 0,
       return true;
     }
     return false;
+  },
+
+  fetchOutstanding: async (businessId: string) => {
+    // To Collect: unpaid invoice balance_due
+    const { data: invData } = await supabase
+      .from('invoices')
+      .select('balance_due')
+      .eq('business_id', businessId)
+      .not('status', 'in', '("paid","cancelled","draft")');
+
+    const toCollect = (invData || []).reduce((sum: number, inv: any) => sum + (Number(inv.balance_due) || 0), 0);
+
+    // To Pay: unpaid expense transactions
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('amount')
+      .eq('business_id', businessId)
+      .eq('type', 'expense')
+      .in('payment_status', ['unpaid', 'partial']);
+
+    const toPay = (txData || []).reduce((sum: number, tx: any) => sum + (Number(tx.amount) || 0), 0);
+
+    set({ outstanding: { toCollect, toPay } });
   },
 }));
