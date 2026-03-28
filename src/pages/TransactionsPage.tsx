@@ -8,7 +8,6 @@ import { formatINR, cn } from '../lib/utils';
 import { useTransactionStore } from '../stores/transactionStore';
 import { useBusinessStore } from '../stores/appStore';
 import AddTransactionModal from '../components/transactions/AddTransactionModal';
-import PaywallModal from '../components/shared/PaywallModal';
 import { useTranslation } from '../lib/i18n';
 
 type Filter = 'all' | 'income' | 'expense';
@@ -49,7 +48,6 @@ export default function TransactionsPage() {
   const { t } = useTranslation();
   const { transactions, fetchTransactions, loading } = useTransactionStore();
   const { business } = useBusinessStore();
-  const [paywallOpen, setPaywallOpen] = useState(false);
 
 
   useEffect(() => {
@@ -204,10 +202,6 @@ export default function TransactionsPage() {
           if (business?.id) fetchTransactions(business.id);
         }}
         defaultType={defaultType}
-      />
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
       />
     </>
   );
