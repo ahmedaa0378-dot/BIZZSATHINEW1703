@@ -13,7 +13,6 @@ import { useContactStore } from '../../stores/contactStore';
 import { useBusinessStore } from '../../stores/appStore';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useNavigate } from 'react-router-dom';
-import PaywallModal from '../shared/PaywallModal';
 
 interface Props {
   open: boolean;
@@ -47,7 +46,6 @@ export default function ChatOverlay({ open, onClose }: Props) {
   const [streamText, setStreamText] = useState('');
   const [actionExecuted, setActionExecuted] = useState<string | null>(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -452,11 +450,6 @@ export default function ChatOverlay({ open, onClose }: Props) {
             </button>
           </div>
         </div>
-
-        <PaywallModal
-          open={paywallOpen}
-          onClose={() => setPaywallOpen(false)}
-        />
 
         {showEndConfirm && (
           <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-t-3xl">
