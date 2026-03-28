@@ -48,6 +48,7 @@ interface TransactionStore {
   paymentMethods: PaymentMethod[];
   dashboardStats: DashboardStats | null;
   cashInHand: number;
+  outstanding: { toCollect: number; toPay: number };
   loading: boolean;
   
   fetchTransactions: (businessId: string) => Promise<void>;
