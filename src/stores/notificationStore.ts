@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { useToastStore } from './toastStore';
 
 export interface Notification {
   id: string;
@@ -28,43 +29,68 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
   fetchNotifications: async (userId, businessId) => {
     set({ loading: true });
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(30);
-    const notifications = data || [];
-    set({
-      notifications,
-      unreadCount: notifications.filter(n => !n.read).length,
-      loading: false,
-    });
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      const notifications = data || [];
+      set({
+        notifications,
+        unreadCount: notifications.filter(n => !n.read).length,
+        loading: false,
+      });
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      useToastStore.getState().addToast('Failed to load notifications', 'error');
+      set({ loading: false });
+    }
   },
 
   markAllRead: async (userId) => {
-    await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
-    set(s => ({
-      notifications: s.notifications.map(n => ({ ...n, read: true })),
-      unreadCount: 0,
-    }));
+    try {
+      const { error } = await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
+      if (error) throw error;
+      set(s => ({
+        notifications: s.notifications.map(n => ({ ...n, read: true })),
+        unreadCount: 0,
+      }));
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+      useToastStore.getState().addToast('Failed to update notifications', 'error');
+    }
   },
 
   markRead: async (id) => {
-    await supabase.from('notifications').update({ read: true }).eq('id', id);
-    set(s => ({
-      notifications: s.notifications.map(n => n.id === id ? { ...n, read: true } : n),
-      unreadCount: Math.max(0, s.unreadCount - 1),
-    }));
+    try {
+      const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
+      if (error) throw error;
+      set(s => ({
+        notifications: s.notifications.map(n => n.id === id ? { ...n, read: true } : n),
+        unreadCount: Math.max(0, s.unreadCount - 1),
+      }));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+      useToastStore.getState().addToast('Failed to mark notification as read', 'error');
+    }
   },
 
   addNotification: async (n) => {
-    const { data } = await supabase.from('notifications').insert(n).select().single();
-    if (data) {
-      set(s => ({
-        notifications: [data, ...s.notifications],
-        unreadCount: s.unreadCount + 1,
-      }));
+    try {
+      const { data, error } = await supabase.from('notifications').insert(n).select().single();
+      if (error) throw error;
+      if (data) {
+        set(s => ({
+          notifications: [data, ...s.notifications],
+          unreadCount: s.unreadCount + 1,
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to add notification:', err);
+      useToastStore.getState().addToast('Failed to save notification', 'error');
     }
   },
 }));
