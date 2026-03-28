@@ -535,16 +535,24 @@ export default function VoiceOverlay({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-surface-light dark:bg-surface-dark">
+return (
+    <div
+      className="fixed inset-0 z-[200] bg-surface-light dark:bg-surface-dark"
+      style={{ height: '100dvh', height: '100vh' }}
+    >
       <PaywallModal
         open={paywallOpen}
         onClose={() => setPaywallOpen(false)}
       />
-<div className="max-w-[430px] mx-auto w-full flex-1 flex flex-col overflow-hidden lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
 
-        {/* Header — with safe area for iOS notch */}
-        <div className="flex items-center justify-between px-4 py-3 pt-[max(12px,env(safe-area-inset-top))] border-b border-neutral-200/60 dark:border-white/5">
+      {/* Use absolute positioning — NOT flexbox. iOS Safari breaks with flex + overflow in fixed containers. */}
+      <div className="absolute inset-0 max-w-[430px] mx-auto w-full lg:border-x lg:border-neutral-200 lg:dark:border-white/5">
+
+        {/* Header — absolute top */}
+        <div
+          className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 border-b border-neutral-200/60 dark:border-white/5 bg-surface-light dark:bg-surface-dark"
+          style={{ paddingTop: 'max(12px, env(safe-area-inset-top))', height: 'calc(56px + env(safe-area-inset-top))' }}
+        >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#c8ee44] to-[#a3c428] flex items-center justify-center">
               <Volume2 size={16} className="text-black" />
@@ -570,8 +578,17 @@ export default function VoiceOverlay({ open, onClose }: Props) {
           </button>
         </div>
 
-        {/* Conversation — scrollable with bottom padding for mic area */}
-<div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-2 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* Conversation — absolute between header and footer */}
+        <div
+          ref={scrollRef}
+          className="absolute left-0 right-0 overflow-y-scroll px-4 py-4 space-y-3"
+          style={{
+            top: 'calc(56px + env(safe-area-inset-top))',
+            bottom: 'calc(140px + env(safe-area-inset-bottom))',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'none',
+          }}
+        >
           {bubbles.map((b, i) => (
             <div key={i} className={cn('flex items-start gap-2.5', b.role === 'user' && 'flex-row-reverse')}>
               {b.role === 'assistant' && (
@@ -625,14 +642,13 @@ export default function VoiceOverlay({ open, onClose }: Props) {
               </div>
             </div>
           )}
-
-          {/* Spacer so last message isn't hidden behind mic */}
-          <div className="h-2" />
         </div>
 
-        {/* Bottom Mic Area — with safe area for iOS home bar */}
-        <div className="shrink-0 px-4 py-4 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-neutral-200/60 dark:border-white/5 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-lg flex flex-col items-center gap-2.5">
-
+        {/* Bottom Mic Area — absolute bottom */}
+        <div
+          className="absolute left-0 right-0 bottom-0 z-10 border-t border-neutral-200/60 dark:border-white/5 bg-surface-light dark:bg-surface-dark flex flex-col items-center gap-2.5 px-4 pt-3"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
           <p className={cn('text-xs font-medium',
             listenState === 'listening' ? 'text-red-500 animate-pulse' :
             listenState === 'speaking' ? 'text-blue-500' :
@@ -679,14 +695,12 @@ export default function VoiceOverlay({ open, onClose }: Props) {
             <p className="text-xs text-red-500 text-center">{error}</p>
           )}
 
-          {/* iOS indicator */}
           {isIOS() && listenState !== 'error' && (
             <p className="text-[10px] text-neutral-400 dark:text-zinc-600">
               Text mode — tap mic to speak
             </p>
           )}
 
-          {/* Whisper mode indicator */}
           {useWhisper && !isIOS() && listenState !== 'error' && (
             <p className="text-[10px] text-neutral-400 dark:text-zinc-600">
               Using enhanced voice mode
@@ -696,4 +710,3 @@ export default function VoiceOverlay({ open, onClose }: Props) {
       </div>
     </div>
   );
-}
