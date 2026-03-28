@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Mic, MessageCircle } from 'lucide-react';
 import TopHeader from './TopHeader';
 import BottomTabBar from './BottomTabBar';
 import VoiceOverlay from '../voice/VoiceOverlay';
 import ChatOverlay from '../chat/ChatOverlay';
+import { useAuthStore, useBusinessStore } from '../../stores/appStore';
+import { useInvoiceStore } from '../../stores/invoiceStore';
+import { useProductStore } from '../../stores/productStore';
+import { useReminderStore } from '../../stores/reminderStore';
 
 export default function AppShell() {
   const [voiceOpen, setVoiceOpen] = useState(false);
