@@ -6,7 +6,6 @@ import { useBusinessStore } from '../stores/appStore';
 import AddProductModal from '../components/stock/AddProductModal';
 import StockAdjustModal from '../components/stock/StockAdjustModal';
 import { useTranslation } from '../lib/i18n';
-import PaywallModal from '../components/shared/PaywallModal';
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; text: string; bg: string }> = {
   in_stock: { label: 'In Stock', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
@@ -28,7 +27,6 @@ export default function StockPage() {
   const { t } = useTranslation();
   const { products, summary, categories, fetchProducts, fetchSummary, deleteProduct } = useProductStore();
   const { business } = useBusinessStore();
-  const [paywallOpen, setPaywallOpen] = useState(false);
 
   useEffect(() => {
     if (business?.id) {
@@ -226,11 +224,6 @@ export default function StockPage() {
         open={showAdd}
         onClose={() => { setShowAdd(false); setEditProduct(null); refreshData(); }}
         editProduct={editProduct}
-      />
-
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
       />
 
       {/* Stock Adjust */}
