@@ -95,9 +95,8 @@ export default function ReportsPage() {
   return (
     <PageWrapper>
       {/* Header */}
-      <div className="sticky top-0 z-50 flex items-center gap-3 px-4 pt-[env(safe-area-inset-top)] h-[calc(56px+env(safe-area-inset-top))]
-        bg-white/80 backdrop-blur-xl border-b border-neutral-200/60
-        dark:bg-black/80 dark:border-white/5">
+      <div className="flex items-center gap-3 px-4 h-12
+        border-b border-neutral-100 dark:border-white/5">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5">
           <ArrowLeft size={20} className="text-neutral-600 dark:text-zinc-400" />
         </button>
