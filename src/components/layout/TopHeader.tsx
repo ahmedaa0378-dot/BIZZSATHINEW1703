@@ -1,14 +1,52 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, ChevronDown, X, Info } from 'lucide-react';
+import { Bell, ChevronDown, X, AlertTriangle, Package, FileText, Clock, Sparkles, CheckCheck } from 'lucide-react';
 import { useLanguageStore, LANGUAGES } from '../../stores/languageStore';
+import { useNotificationStore } from '../../stores/notificationStore';
+import { useAuthStore, useBusinessStore } from '../../stores/appStore';
+import { useAlerts, Alert } from '../../hooks/useAlerts';
+import { useNavigate } from 'react-router-dom';
+
+function AlertIcon({ type }: { type: string }) {
+  switch (type) {
+    case 'trial': return <AlertTriangle size={16} className="text-amber-500" />;
+    case 'overdue': return <FileText size={16} className="text-red-500" />;
+    case 'low_stock': return <Package size={16} className="text-orange-500" />;
+    case 'reminder': return <Clock size={16} className="text-purple-500" />;
+    default: return <Sparkles size={16} className="text-blue-500" />;
+  }
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
 
 export default function TopHeader() {
   const { language, setLanguage, getShortLabel } = useLanguageStore();
+  const { notifications, unreadCount, fetchNotifications, markAllRead } = useNotificationStore();
+  const { user } = useAuthStore();
+  const { business } = useBusinessStore();
+  const alerts = useAlerts();
+  const navigate = useNavigate();
+
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  // Fetch stored notifications on mount
+  useEffect(() => {
+    if (user?.id && business?.id) {
+      fetchNotifications(user.id, business.id);
+    }
+  }, [user?.id, business?.id]);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     function close(e: MouseEvent) {
       if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
@@ -17,6 +55,34 @@ export default function TopHeader() {
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, []);
+
+  // Combine: live alerts + stored notifications
+  const allItems = [
+    ...alerts.map(a => ({ ...a, source: 'alert' as const })),
+    ...notifications.map(n => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      type: n.type,
+      action_url: n.action_url,
+      created_at: n.created_at,
+      read: n.read,
+      source: 'stored' as const,
+    })),
+  ];
+
+  const totalUnread = alerts.length + unreadCount;
+
+  const handleItemClick = (item: typeof allItems[0]) => {
+    if (item.action_url) {
+      navigate(item.action_url);
+      setNotifOpen(false);
+    }
+  };
+
+  const handleMarkAllRead = () => {
+    if (user?.id) markAllRead(user.id);
+  };
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-4 h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]
@@ -74,10 +140,16 @@ export default function TopHeader() {
             className="relative p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
           >
             <Bell size={20} className="text-neutral-600 dark:text-zinc-400" />
+            {totalUnread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center
+                rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
+                {totalUnread > 9 ? '9+' : totalUnread}
+              </span>
+            )}
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 top-full mt-2 w-[300px] bg-white dark:bg-[#0f0f0f]
+            <div className="absolute right-0 top-full mt-2 w-[320px] bg-white dark:bg-[#0f0f0f]
               border border-neutral-200 dark:border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden">
 
               {/* Header */}
@@ -85,25 +157,55 @@ export default function TopHeader() {
                 <div className="flex items-center gap-2">
                   <Bell size={15} className="text-neutral-500 dark:text-zinc-400" />
                   <span className="font-semibold text-sm text-neutral-900 dark:text-white">Notifications</span>
+                  {totalUnread > 0 && (
+                    <span className="text-[10px] font-bold bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full">{totalUnread}</span>
+                  )}
                 </div>
-                <button
-                  onClick={() => setNotifOpen(false)}
-                  className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
-                  <X size={15} className="text-neutral-400 dark:text-zinc-500" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {unreadCount > 0 && (
+                    <button onClick={handleMarkAllRead}
+                      className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                      title="Mark all read">
+                      <CheckCheck size={14} className="text-neutral-400 dark:text-zinc-500" />
+                    </button>
+                  )}
+                  <button onClick={() => setNotifOpen(false)}
+                    className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">
+                    <X size={14} className="text-neutral-400 dark:text-zinc-500" />
+                  </button>
+                </div>
               </div>
 
-              {/* Empty state */}
-              <div className="flex flex-col items-center justify-center py-10 gap-3 px-4">
-                <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center">
-                  <Info size={20} className="text-neutral-400 dark:text-zinc-600" />
-                </div>
-                <p className="text-sm font-medium text-neutral-500 dark:text-zinc-500 text-center">
-                  No notifications yet
-                </p>
-                <p className="text-xs text-neutral-400 dark:text-zinc-600 text-center">
-                  Low stock alerts, payment reminders and daily summaries will appear here
-                </p>
+              {/* List */}
+              <div className="max-h-[360px] overflow-y-auto">
+                {allItems.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 gap-2 px-4">
+                    <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center">
+                      <Bell size={20} className="text-neutral-300 dark:text-zinc-700" />
+                    </div>
+                    <p className="text-sm font-medium text-neutral-400 dark:text-zinc-600">All clear!</p>
+                    <p className="text-xs text-neutral-300 dark:text-zinc-700 text-center">Alerts for low stock, overdue invoices & reminders will show here</p>
+                  </div>
+                ) : (
+                  allItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleItemClick(item)}
+                      className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors
+                        hover:bg-neutral-50 dark:hover:bg-white/5 border-b border-neutral-50 dark:border-white/3
+                        ${item.source === 'stored' && (item as any).read ? 'opacity-50' : ''}`}
+                    >
+                      <div className="mt-0.5 w-8 h-8 rounded-xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center flex-shrink-0">
+                        <AlertIcon type={item.type} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate">{item.title}</p>
+                        <p className="text-xs text-neutral-500 dark:text-zinc-500 line-clamp-2">{item.body}</p>
+                        <p className="text-[10px] text-neutral-400 dark:text-zinc-600 mt-1">{timeAgo(item.created_at)}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -113,3 +215,101 @@ export default function TopHeader() {
     </header>
   );
 }
+```
+
+This fixes **both** item #4 (iOS safe-area, now in the header) **and** item #5 (live notification bell).
+
+---
+
+### 5d. AppShell.tsx — Pre-fetch data for alerts
+
+The bell needs invoices, products, and reminders loaded. Add a data pre-fetch in AppShell:
+
+**Find** (lines 1-7):
+```
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { Mic, MessageCircle } from 'lucide-react';
+import TopHeader from './TopHeader';
+import BottomTabBar from './BottomTabBar';
+import VoiceOverlay from '../voice/VoiceOverlay';
+import ChatOverlay from '../chat/ChatOverlay';
+```
+
+**Replace with:**
+```
+import { useState, useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
+import { Mic, MessageCircle } from 'lucide-react';
+import TopHeader from './TopHeader';
+import BottomTabBar from './BottomTabBar';
+import VoiceOverlay from '../voice/VoiceOverlay';
+import ChatOverlay from '../chat/ChatOverlay';
+import { useAuthStore, useBusinessStore } from '../../stores/appStore';
+import { useInvoiceStore } from '../../stores/invoiceStore';
+import { useProductStore } from '../../stores/productStore';
+import { useReminderStore } from '../../stores/reminderStore';
+```
+
+**Find** (line 10-11):
+```
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+```
+
+**Replace with:**
+```
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const { user } = useAuthStore();
+  const { business } = useBusinessStore();
+  const { fetchInvoices } = useInvoiceStore();
+  const { fetchProducts } = useProductStore();
+  const { fetchReminders } = useReminderStore();
+
+  // Pre-fetch data for notification alerts
+  useEffect(() => {
+    if (business?.id && user?.id) {
+      fetchInvoices(business.id);
+      fetchProducts(business.id);
+      fetchReminders(user.id);
+    }
+  }, [business?.id, user?.id]);
+```
+
+**Note:** Check the import paths — they depend on where AppShell.tsx lives relative to stores. If AppShell is in `src/components/layout/`, the paths above (`../../stores/...`) are correct. If it's elsewhere, adjust accordingly.
+
+---
+
+### 5e. Error handling on remaining stores — Claude Code prompt
+```
+In the BizSaathi codebase, add error handling (try/catch + toast) to these 5 stores that currently have unhandled Supabase queries. Follow the same pattern already used in transactionStore and invoiceStore.
+
+Import the toast store at the top of each file:
+import { useToastStore } from './toastStore';
+
+Then wrap every Supabase query in try/catch blocks. In the catch block, call:
+useToastStore.getState().addToast('Descriptive error message', 'error');
+
+Files to update:
+1. src/stores/notificationStore.ts — wrap fetchNotifications, markAllRead, markRead, addNotification
+2. src/stores/reminderStore.ts — wrap fetchReminders, addReminder, toggleComplete, deleteReminder
+3. src/stores/reportsStore.ts — wrap all fetch functions
+4. src/stores/distributorStore.ts — wrap all Supabase queries
+5. src/stores/marketingStore.ts — wrap all Supabase queries
+
+Pattern to follow for each function:
+BEFORE:
+const { data } = await supabase.from('table').select('*')...
+
+AFTER:
+try {
+  const { data, error } = await supabase.from('table').select('*')...
+  if (error) throw error;
+  // existing success logic
+} catch (err) {
+  console.error('Descriptive context:', err);
+  useToastStore.getState().addToast('Failed to load data', 'error');
+}
+
+Do NOT change any function signatures, return types, or business logic. Only add error boundaries.
