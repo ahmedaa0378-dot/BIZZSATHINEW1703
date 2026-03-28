@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { useToastStore } from './toastStore';
 import { proxyChat } from '../lib/api-proxy';
 
 export interface MarketingPost {
@@ -46,61 +47,82 @@ export const useMarketingStore = create<MarketingStore>((set, get) => ({
 
   fetchPosts: async (businessId) => {
     set({ loading: true });
-    const { data } = await supabase
-      .from('marketing_posts')
-      .select('*')
-      .eq('business_id', businessId)
-      .order('created_at', { ascending: false });
-
-    set({ loading: false });
-    if (data) set({ posts: data as MarketingPost[] });
+    try {
+      const { data, error } = await supabase
+        .from('marketing_posts')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      set({ loading: false });
+      if (data) set({ posts: data as MarketingPost[] });
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+      useToastStore.getState().addToast('Failed to load campaigns', 'error');
+      set({ loading: false });
+    }
   },
 
   fetchFestivals: async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const { data } = await supabase
-      .from('festivals')
-      .select('*')
-      .gte('date', today)
-      .order('date')
-      .limit(20);
-
-    if (data) {
-      set({ festivals: data as Festival[] });
-      const fifteenDays = new Date();
-      fifteenDays.setDate(fifteenDays.getDate() + 15);
-      const upcoming = (data as Festival[]).filter((f) => new Date(f.date) <= fifteenDays);
-      set({ upcomingFestivals: upcoming });
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('festivals')
+        .select('*')
+        .gte('date', today)
+        .order('date')
+        .limit(20);
+      if (error) throw error;
+      if (data) {
+        set({ festivals: data as Festival[] });
+        const fifteenDays = new Date();
+        fifteenDays.setDate(fifteenDays.getDate() + 15);
+        const upcoming = (data as Festival[]).filter((f) => new Date(f.date) <= fifteenDays);
+        set({ upcomingFestivals: upcoming });
+      }
+    } catch (err) {
+      console.error('Failed to fetch festivals:', err);
+      useToastStore.getState().addToast('Failed to load festivals', 'error');
     }
   },
 
   createPost: async (post) => {
     set({ loading: true });
-    const { data, error } = await supabase
-      .from('marketing_posts')
-      .insert(post)
-      .select()
-      .single();
-
-    set({ loading: false });
-    if (!error && data) {
-      set({ posts: [data as MarketingPost, ...get().posts] });
-      return data as MarketingPost;
+    try {
+      const { data, error } = await supabase
+        .from('marketing_posts')
+        .insert(post)
+        .select()
+        .single();
+      if (error) throw error;
+      set({ loading: false });
+      if (data) {
+        set({ posts: [data as MarketingPost, ...get().posts] });
+        return data as MarketingPost;
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to create post:', err);
+      useToastStore.getState().addToast('Failed to save post', 'error');
+      set({ loading: false });
+      return null;
     }
-    return null;
   },
 
   deletePost: async (id) => {
-    const { error } = await supabase
-      .from('marketing_posts')
-      .delete()
-      .eq('id', id);
-
-    if (!error) {
+    try {
+      const { error } = await supabase
+        .from('marketing_posts')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
       set({ posts: get().posts.filter((p) => p.id !== id) });
       return true;
+    } catch (err) {
+      console.error('Failed to delete post:', err);
+      useToastStore.getState().addToast('Failed to delete post', 'error');
+      return false;
     }
-    return false;
   },
 }));
 
