@@ -10,7 +10,6 @@ import { useContactStore } from '../stores/contactStore';
 import { useBusinessStore } from '../stores/appStore';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
-import PaywallModal from '../components/shared/PaywallModal';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi',
@@ -32,7 +31,6 @@ export default function CreateInvoicePage() {
   const { createInvoice, getNextNumber, loading } = useInvoiceStore();
   const { contacts, fetchContacts } = useContactStore();
   const { business } = useBusinessStore();
-  const [paywallOpen, setPaywallOpen] = useState(false);
 
   // Step 1 — Customer
   const [contactId, setContactId] = useState<string | null>(null);
@@ -496,10 +494,6 @@ export default function CreateInvoicePage() {
             </button>
           </div>
         </div>
-    <PaywallModal
-      open={paywallOpen}
-      onClose={() => setPaywallOpen(false)}
-    />
     </PageWrapper>
   );
 }
