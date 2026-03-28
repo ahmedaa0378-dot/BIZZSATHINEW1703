@@ -75,7 +75,8 @@ export default function HomePage() {
     fetchTransactions(business.id);
     fetchCategories(business.id);
     fetchPaymentMethods(business.id);
-    fetchCashInHand(business.id);
+fetchCashInHand(business.id);
+    fetchOutstanding(business.id);
   }
 
   // Re-fetch when chatbot logs a transaction
