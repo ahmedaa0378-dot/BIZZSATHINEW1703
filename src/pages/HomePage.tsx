@@ -62,9 +62,9 @@ export default function HomePage() {
 
   const { t, greeting } = useTranslation();
   const {
-    transactions, dashboardStats, cashInHand,
+    transactions, dashboardStats, cashInHand, outstanding,
     fetchTransactions, fetchDashboardStats, fetchCashInHand,
-    fetchCategories, fetchPaymentMethods,
+    fetchCategories, fetchPaymentMethods, fetchOutstanding,
   } = useTransactionStore();
   const { business } = useBusinessStore();
   const navigate = useNavigate();
