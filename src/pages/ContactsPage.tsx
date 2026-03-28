@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import AddContactModal from '../components/contacts/AddContactModal';
 import ContactDetailSheet from '../components/contacts/ContactDetailSheet';
 import PageWrapper from '../components/layout/PageWrapper';
-import PaywallModal from '../components/shared/PaywallModal';
 
 type Filter = 'all' | 'customer' | 'supplier';
 
@@ -21,7 +20,6 @@ export default function ContactsPage() {
   const { contacts, fetchContacts } = useContactStore();
   const { business } = useBusinessStore();
   const navigate = useNavigate();
-  const [paywallOpen, setPaywallOpen] = useState(false);
 
   useEffect(() => {
     if (business?.id) fetchContacts(business.id);
@@ -213,11 +211,6 @@ export default function ContactsPage() {
           if (business?.id) fetchContacts(business.id);
         }}
         editContact={editContact}
-      />
-
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
       />
 
       {/* Detail Sheet */}
