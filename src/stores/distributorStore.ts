@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { useToastStore } from './toastStore';
 
 export interface Distributor {
   id: string;
@@ -44,64 +45,85 @@ export const useDistributorStore = create<DistributorStore>((set, get) => ({
 
   fetchDistributors: async (city, category) => {
     set({ loading: true });
-    let query = supabase
-      .from('distributors')
-      .select('*')
-      .eq('is_active', true)
-      .order('rating', { ascending: false });
+    try {
+      let query = supabase
+        .from('distributors')
+        .select('*')
+        .eq('is_active', true)
+        .order('rating', { ascending: false });
 
-    if (city) query = query.ilike('city', `%${city}%`);
-    if (category) query = query.contains('categories', [category]);
+      if (city) query = query.ilike('city', `%${city}%`);
+      if (category) query = query.contains('categories', [category]);
 
-    const { data } = await query;
-    set({ loading: false });
-    if (data) set({ distributors: data as Distributor[] });
+      const { data, error } = await query;
+      if (error) throw error;
+      set({ loading: false });
+      if (data) set({ distributors: data as Distributor[] });
+    } catch (err) {
+      console.error('Failed to fetch distributors:', err);
+      useToastStore.getState().addToast('Failed to load distributors', 'error');
+      set({ loading: false });
+    }
   },
 
   rateDistributor: async (distributorId, userId, rating) => {
-    // Upsert rating
-    const { error: rateErr } = await supabase
-      .from('distributor_ratings')
-      .upsert({ distributor_id: distributorId, user_id: userId, rating }, { onConflict: 'distributor_id,user_id' });
+    try {
+      // Upsert rating
+      const { error: rateErr } = await supabase
+        .from('distributor_ratings')
+        .upsert({ distributor_id: distributorId, user_id: userId, rating }, { onConflict: 'distributor_id,user_id' });
+      if (rateErr) throw rateErr;
 
-    if (rateErr) return false;
+      // Recalculate average
+      const { data: ratings, error: fetchErr } = await supabase
+        .from('distributor_ratings')
+        .select('rating')
+        .eq('distributor_id', distributorId);
+      if (fetchErr) throw fetchErr;
 
-    // Recalculate average
-    const { data: ratings } = await supabase
-      .from('distributor_ratings')
-      .select('rating')
-      .eq('distributor_id', distributorId);
+      if (ratings) {
+        const avg = ratings.reduce((s, r) => s + r.rating, 0) / ratings.length;
+        const { error: updateErr } = await supabase
+          .from('distributors')
+          .update({ rating: Math.round(avg * 10) / 10, rating_count: ratings.length })
+          .eq('id', distributorId);
+        if (updateErr) throw updateErr;
 
-    if (ratings) {
-      const avg = ratings.reduce((s, r) => s + r.rating, 0) / ratings.length;
-      await supabase
-        .from('distributors')
-        .update({ rating: Math.round(avg * 10) / 10, rating_count: ratings.length })
-        .eq('id', distributorId);
-
-      set({
-        distributors: get().distributors.map((d) =>
-          d.id === distributorId ? { ...d, rating: Math.round(avg * 10) / 10, rating_count: ratings.length } : d
-        ),
-      });
+        set({
+          distributors: get().distributors.map((d) =>
+            d.id === distributorId ? { ...d, rating: Math.round(avg * 10) / 10, rating_count: ratings.length } : d
+          ),
+        });
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to rate distributor:', err);
+      useToastStore.getState().addToast('Failed to save rating', 'error');
+      return false;
     }
-    return true;
   },
 
   addDistributor: async (dist) => {
     set({ loading: true });
-    const { data, error } = await supabase
-      .from('distributors')
-      .insert(dist)
-      .select()
-      .single();
-
-    set({ loading: false });
-    if (!error && data) {
-      set({ distributors: [...get().distributors, data as Distributor] });
-      return data as Distributor;
+    try {
+      const { data, error } = await supabase
+        .from('distributors')
+        .insert(dist)
+        .select()
+        .single();
+      if (error) throw error;
+      set({ loading: false });
+      if (data) {
+        set({ distributors: [...get().distributors, data as Distributor] });
+        return data as Distributor;
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to add distributor:', err);
+      useToastStore.getState().addToast('Failed to add distributor', 'error');
+      set({ loading: false });
+      return null;
     }
-    return null;
   },
 }));
 
