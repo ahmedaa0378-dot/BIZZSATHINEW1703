@@ -13,6 +13,20 @@ import { useReminderStore } from '../../stores/reminderStore';
 export default function AppShell() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const { user } = useAuthStore();
+  const { business } = useBusinessStore();
+  const { fetchInvoices } = useInvoiceStore();
+  const { fetchProducts } = useProductStore();
+  const { fetchReminders } = useReminderStore();
+
+  // Pre-fetch data for notification alerts
+  useEffect(() => {
+    if (business?.id && user?.id) {
+      fetchInvoices(business.id);
+      fetchProducts(business.id);
+      fetchReminders(user.id);
+    }
+  }, [business?.id, user?.id]);
 
   return (
     <div className="max-w-[430px] mx-auto min-h-screen relative
