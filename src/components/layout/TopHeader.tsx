@@ -3,7 +3,7 @@ import { Bell, ChevronDown, X, AlertTriangle, Package, FileText, Clock, Sparkles
 import { useLanguageStore, LANGUAGES } from '../../stores/languageStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useAuthStore, useBusinessStore } from '../../stores/appStore';
-import { useAlerts, Alert } from '../../hooks/useAlerts';
+import { useAlerts, Alert } from '../../lib/useAlerts';
 import { useNavigate } from 'react-router-dom';
 
 function AlertIcon({ type }: { type: string }) {
