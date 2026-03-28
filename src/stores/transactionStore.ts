@@ -55,7 +55,8 @@ interface TransactionStore {
   fetchCategories: (businessId: string) => Promise<void>;
   fetchPaymentMethods: (businessId: string) => Promise<void>;
   fetchDashboardStats: (businessId: string, startDate: string, endDate: string) => Promise<void>;
-  fetchCashInHand: (businessId: string) => Promise<void>;
+fetchCashInHand: (businessId: string) => Promise<void>;
+  fetchOutstanding: (businessId: string) => Promise<void>;
   addTransaction: (tx: Omit<Transaction, 'id' | 'created_at'>) => Promise<Transaction | null>;
   deleteTransaction: (id: string) => Promise<boolean>;
 }
