@@ -198,11 +198,11 @@ fetchCashInHand(business.id);
         <div className="grid grid-cols-2 gap-3">
           <div className="glass-card p-4 border-l-[3px] border-l-emerald-500">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">{t('to_collect')}</p>
-            <p className="text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{formatINR(0)}</p>
+<p className="text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{formatINR(outstanding.toCollect)}</p>
           </div>
           <div className="glass-card p-4 border-l-[3px] border-l-red-500">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-red-500 dark:text-red-400 mb-1">{t('to_pay')}</p>
-            <p className="text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{formatINR(0)}</p>
+            <p className="text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{formatINR(outstanding.toPay)}</p>
           </div>
         </div>
 
