@@ -66,7 +66,8 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   categories: [],
   paymentMethods: [],
   dashboardStats: null,
-  cashInHand: 0,
+cashInHand: 0,
+  outstanding: { toCollect: 0, toPay: 0 },
   loading: false,
 
   fetchTransactions: async (businessId: string) => {
