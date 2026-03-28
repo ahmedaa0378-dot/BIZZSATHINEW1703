@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { useToastStore } from './toastStore';
 
 export interface CategoryBreakdown {
   category_name: string;
@@ -56,62 +57,93 @@ export const useReportsStore = create<ReportsStore>((set) => ({
 
   fetchPnL: async (businessId, start, end) => {
     set({ loading: true });
-    const { data } = await supabase.rpc('get_dashboard_stats', {
-      p_business_id: businessId,
-      p_start_date: start,
-      p_end_date: end,
-    });
-    set({ loading: false });
-    if (data && data.length > 0) {
-      set({ stats: data[0] as DashboardStats });
-    } else {
-      set({ stats: { total_income: 0, total_expense: 0, profit: 0, transaction_count: 0 } });
+    try {
+      const { data, error } = await supabase.rpc('get_dashboard_stats', {
+        p_business_id: businessId,
+        p_start_date: start,
+        p_end_date: end,
+      });
+      if (error) throw error;
+      set({ loading: false });
+      if (data && data.length > 0) {
+        set({ stats: data[0] as DashboardStats });
+      } else {
+        set({ stats: { total_income: 0, total_expense: 0, profit: 0, transaction_count: 0 } });
+      }
+    } catch (err) {
+      console.error('Failed to fetch P&L:', err);
+      useToastStore.getState().addToast('Failed to load report data', 'error');
+      set({ loading: false });
     }
   },
 
   fetchPrevPnL: async (businessId, start, end) => {
-    const { data } = await supabase.rpc('get_dashboard_stats', {
-      p_business_id: businessId,
-      p_start_date: start,
-      p_end_date: end,
-    });
-    if (data && data.length > 0) {
-      set({ prevStats: data[0] as DashboardStats });
-    } else {
-      set({ prevStats: { total_income: 0, total_expense: 0, profit: 0, transaction_count: 0 } });
+    try {
+      const { data, error } = await supabase.rpc('get_dashboard_stats', {
+        p_business_id: businessId,
+        p_start_date: start,
+        p_end_date: end,
+      });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        set({ prevStats: data[0] as DashboardStats });
+      } else {
+        set({ prevStats: { total_income: 0, total_expense: 0, profit: 0, transaction_count: 0 } });
+      }
+    } catch (err) {
+      console.error('Failed to fetch previous P&L:', err);
+      useToastStore.getState().addToast('Failed to load report data', 'error');
     }
   },
 
   fetchCategoryBreakdown: async (businessId, type, start, end) => {
-    const { data } = await supabase.rpc('get_category_breakdown', {
-      p_business_id: businessId,
-      p_type: type,
-      p_start_date: start,
-      p_end_date: end,
-    });
-    if (data) {
-      if (type === 'expense') set({ expenseBreakdown: data as CategoryBreakdown[] });
-      else set({ incomeBreakdown: data as CategoryBreakdown[] });
+    try {
+      const { data, error } = await supabase.rpc('get_category_breakdown', {
+        p_business_id: businessId,
+        p_type: type,
+        p_start_date: start,
+        p_end_date: end,
+      });
+      if (error) throw error;
+      if (data) {
+        if (type === 'expense') set({ expenseBreakdown: data as CategoryBreakdown[] });
+        else set({ incomeBreakdown: data as CategoryBreakdown[] });
+      }
+    } catch (err) {
+      console.error('Failed to fetch category breakdown:', err);
+      useToastStore.getState().addToast('Failed to load report data', 'error');
     }
   },
 
   fetchDailyTrend: async (businessId, start, end) => {
-    const { data } = await supabase.rpc('get_daily_trend', {
-      p_business_id: businessId,
-      p_start_date: start,
-      p_end_date: end,
-    });
-    if (data) {
-      set({ dailyTrend: data as DailyTrend[] });
+    try {
+      const { data, error } = await supabase.rpc('get_daily_trend', {
+        p_business_id: businessId,
+        p_start_date: start,
+        p_end_date: end,
+      });
+      if (error) throw error;
+      if (data) {
+        set({ dailyTrend: data as DailyTrend[] });
+      }
+    } catch (err) {
+      console.error('Failed to fetch daily trend:', err);
+      useToastStore.getState().addToast('Failed to load report data', 'error');
     }
   },
 
   fetchReceivablesAging: async (businessId) => {
-    const { data } = await supabase.rpc('get_receivables_aging', {
-      p_business_id: businessId,
-    });
-    if (data) {
-      set({ receivablesAging: data as AgingItem[] });
+    try {
+      const { data, error } = await supabase.rpc('get_receivables_aging', {
+        p_business_id: businessId,
+      });
+      if (error) throw error;
+      if (data) {
+        set({ receivablesAging: data as AgingItem[] });
+      }
+    } catch (err) {
+      console.error('Failed to fetch receivables aging:', err);
+      useToastStore.getState().addToast('Failed to load report data', 'error');
     }
   },
 }));
