@@ -11,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTransactionStore } from '../stores/transactionStore';
 import { useBusinessStore } from '../stores/appStore';
 import AddTransactionModal from '../components/transactions/AddTransactionModal';
-import PaywallModal from '../components/shared/PaywallModal';
 import { useInsightsStore } from '../stores/insightsStore';
 import { useTranslation } from '../lib/i18n';
 
@@ -57,7 +56,6 @@ export default function HomePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState<'income' | 'expense'>('expense');
   const { insights, fetchInsights } = useInsightsStore();
-  const [paywallOpen, setPaywallOpen] = useState(false);
 
 
   const { t, greeting } = useTranslation();
@@ -325,10 +323,6 @@ fetchCashInHand(business.id);
         }}
         defaultType={addType}
       />
-    <PaywallModal
-  open={paywallOpen}
-  onClose={() => setPaywallOpen(false)}
-/>
     </>
   );
 }
