@@ -2,11 +2,27 @@ import { useState } from 'react';
 import {
   ArrowLeft, Check, Crown, Sparkles, Star, Shield, Loader2, Zap,
 } from 'lucide-react';
-import { cn, formatINR } from '../lib/utils';
-import { useBusinessStore, hasAccess, trialDaysLeft, planLabel } from '../stores/appStore';
+import { cn } from '../lib/utils';
+import { useBusinessStore, useAuthStore, hasAccess, trialDaysLeft, planLabel } from '../stores/appStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
+import { useToastStore } from '../stores/toastStore';
+
+const PLAN_IDS = {
+  pro_monthly: 'plan_SXakNGPsC7um2m',
+  pro_annual: 'plan_SXaldi2z7qW8M4',
+  business_monthly: 'plan_SXamR8uvMGICmv',
+  business_annual: 'plan_SXanE1PDvkcnia',
+};
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const PRO_FEATURES = [
   'Unlimited transactions & invoices',
