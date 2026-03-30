@@ -322,10 +322,10 @@ const handleUpgrade = async (tier: 'pro' | 'business') => {
         </div>
 
         {/* Note */}
-        <div className="glass-card p-4 border-l-[3px] border-l-blue-500">
+<div className="glass-card p-4 border-l-[3px] border-l-emerald-500">
           <p className="text-xs text-neutral-600 dark:text-zinc-400 leading-relaxed">
-            <strong className="text-neutral-900 dark:text-white">Razorpay payments coming soon.</strong>{' '}
-            Contact us at support@bizzsathi.com to upgrade manually and get instant access.
+            <strong className="text-neutral-900 dark:text-white">Secure payments by Razorpay.</strong>{' '}
+            Pay via UPI, Debit/Credit Card, or Net Banking. Cancel anytime from this page.
           </p>
         </div>
 
