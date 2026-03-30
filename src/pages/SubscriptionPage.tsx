@@ -63,12 +63,74 @@ const navigate = useNavigate();
     business: { monthly: 699, annual: 6710 },
   };
 
-  const handleUpgrade = async (planId: string) => {
-    setUpgrading(planId);
+const handleUpgrade = async (tier: 'pro' | 'business') => {
+    if (!business?.id || !user?.email) return;
+    setUpgrading(tier);
     try {
-      // Razorpay integration coming soon
-      // For now just show alert
-      alert(`Razorpay integration coming soon! You selected ${planId} plan.`);
+      const planKey = `${tier}_${billing}` as keyof typeof PLAN_IDS;
+      const plan_id = PLAN_IDS[planKey];
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          plan_id,
+          business_id: business.id,
+          user_email: user.email,
+          user_name: business.ownerName,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create subscription');
+      }
+
+      const { subscription_id, key_id } = await res.json();
+
+      const options = {
+        key: key_id,
+        subscription_id,
+        name: 'BizSaathi',
+        description: `${tier === 'pro' ? 'Pro' : 'Business'} Plan — ${billing === 'monthly' ? 'Monthly' : 'Annual'}`,
+        prefill: {
+          name: business.ownerName || '',
+          email: user.email || '',
+        },
+        theme: { color: '#c8ee44' },
+        handler: async () => {
+          toast.addToast('Payment successful! Upgrading your plan...', 'success');
+          setTimeout(async () => {
+            const { data: biz } = await supabase
+              .from('businesses')
+              .select('subscription_tier, trial_ends_at, subscription_status, current_period_end')
+              .eq('id', business.id)
+              .single();
+            if (biz) {
+              setBusiness({ ...business, subscriptionTier: biz.subscription_tier || tier });
+              toast.addToast(`You're now on the ${tier === 'pro' ? 'Pro' : 'Business'} plan!`, 'success');
+            }
+          }, 3000);
+        },
+        modal: {
+          ondismiss: () => {
+            setUpgrading(null);
+            toast.addToast('Payment cancelled', 'info');
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response: any) => {
+        toast.addToast(response.error?.description || 'Payment failed. Please try again.', 'error');
+        setUpgrading(null);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.addToast(err.message || 'Something went wrong', 'error');
     } finally {
       setUpgrading(null);
     }
