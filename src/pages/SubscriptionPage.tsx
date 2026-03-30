@@ -46,9 +46,11 @@ const BUSINESS_EXTRAS = [
 ];
 
 export default function SubscriptionPage() {
-  const navigate = useNavigate();
-  const { business } = useBusinessStore();
+const navigate = useNavigate();
+  const { business, setBusiness } = useBusinessStore();
+  const { user } = useAuthStore();
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
+  const toast = useToastStore();
   const [upgrading, setUpgrading] = useState<string | null>(null);
 
   const currentTier = business?.subscriptionTier || 'trial';
