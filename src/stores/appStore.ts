@@ -27,6 +27,8 @@ interface BusinessStore {
     ownerName: string;
     subscriptionTier: 'trial' | 'pro' | 'business';
     trialEndsAt: string | null;
+    subscriptionStatus: string | null;
+    currentPeriodEnd: string | null;
     isSuperAdmin: boolean;
   };
   setBusiness: (b: BusinessStore['business']) => void;
