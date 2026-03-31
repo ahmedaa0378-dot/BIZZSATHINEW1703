@@ -330,11 +330,53 @@ const handleUpgrade = async (tier: 'pro' | 'business') => {
             <strong className="text-neutral-900 dark:text-white">Secure payments by Razorpay.</strong>{' '}
             Pay via UPI, Debit/Credit Card, or Net Banking.
           </p>
-          <p className="text-xs text-neutral-600 dark:text-zinc-400 leading-relaxed">
+<p className="text-xs text-neutral-600 dark:text-zinc-400 leading-relaxed">
             <strong className="text-neutral-900 dark:text-white">Cancel anytime.</strong>{' '}
             Go to More → Subscription → Cancel. You keep full access until your paid period ends. No questions asked.
           </p>
         </div>
+
+        {/* Cancel Subscription */}
+        {(currentTier === 'pro' || currentTier === 'business') && (business as any)?.subscriptionStatus !== 'cancelled' && (
+          <div className="glass-card p-4">
+            <button
+              onClick={async () => {
+                if (!confirm('Are you sure you want to cancel? You\'ll keep access until your current paid period ends.')) return;
+                setUpgrading('cancel');
+                try {
+                  const res = await fetch(`${SUPABASE_URL}/functions/v1/cancel-subscription`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                    },
+                    body: JSON.stringify({ business_id: business?.id }),
+                  });
+                  if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to cancel');
+                  }
+                  const result = await res.json();
+                  setBusiness({ ...business!, subscriptionStatus: 'cancelled', currentPeriodEnd: result.access_until } as any);
+                  toast.addToast('Subscription cancelled. You keep access until your paid period ends.', 'info');
+                } catch (err: any) {
+                  toast.addToast(err.message || 'Failed to cancel subscription', 'error');
+                } finally {
+                  setUpgrading(null);
+                }
+              }}
+              disabled={upgrading === 'cancel'}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl
+                border border-red-200 dark:border-red-500/20 text-red-500 text-sm font-semibold
+                hover:bg-red-50 dark:hover:bg-red-500/5 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {upgrading === 'cancel' ? <Loader2 size={16} className="animate-spin" /> : 'Cancel Subscription'}
+            </button>
+            <p className="text-[11px] text-neutral-400 dark:text-zinc-600 text-center mt-2">
+              You'll keep full access until your current paid period ends
+            </p>
+          </div>
+        )}
 
       </div>
     </PageWrapper>
