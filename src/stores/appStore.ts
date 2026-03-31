@@ -42,8 +42,20 @@ export const useBusinessStore = create<BusinessStore>((set) => ({
 // Is the user on an active paid or trial plan?
 export function hasAccess(business: BusinessStore['business']): boolean {
   if (!business) return false;
-  if (business.isSuperAdmin) return true;
-  if (business.subscriptionTier === 'pro' || business.subscriptionTier === 'business') return true;
+  if ((business as any).isSuperAdmin) return true;
+  
+  // Active paid plan
+  if ((business.subscriptionTier === 'pro' || business.subscriptionTier === 'business')) {
+    // If cancelled, check if current period still valid
+    if ((business as any).subscriptionStatus === 'cancelled') {
+      const periodEnd = (business as any).currentPeriodEnd;
+      if (periodEnd && new Date(periodEnd) > new Date()) return true;
+      return false;
+    }
+    return true;
+  }
+  
+  // Trial
   if (business.subscriptionTier === 'trial' && business.trialEndsAt) {
     return new Date(business.trialEndsAt) > new Date();
   }
