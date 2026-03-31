@@ -169,12 +169,10 @@ const handleUpgrade = async (tier: 'pro' | 'business') => {
               {currentTier === 'trial' && daysLeft === 0 && (
                 <p className="text-xs text-red-500 mt-0.5">Upgrade to continue using BizzSathi</p>
               )}
-              {(currentTier === 'pro' || currentTier === 'business') && (
-                <>
-                  <p className="text-xs text-emerald-500 mt-0.5 flex items-center gap-1">
-                    <Shield size={11} /> {(business as any)?.subscriptionStatus === 'cancelled' ? 'Cancelled — access until period ends' : 'Active subscription'}
-                  </p>
-                </>
+{(currentTier === 'pro' || currentTier === 'business') && (
+                <p className="text-xs text-emerald-500 mt-0.5 flex items-center gap-1">
+                  <Shield size={11} /> {(business as any)?.subscriptionStatus === 'cancelled' ? 'Cancelled — access until period ends' : 'Active subscription'}
+                </p>
               )}
               )}
             </div>
