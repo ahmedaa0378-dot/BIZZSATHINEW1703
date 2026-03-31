@@ -174,7 +174,6 @@ const handleUpgrade = async (tier: 'pro' | 'business') => {
                   <Shield size={11} /> {(business as any)?.subscriptionStatus === 'cancelled' ? 'Cancelled — access until period ends' : 'Active subscription'}
                 </p>
               )}
-              )}
             </div>
           </div>
         </div>
