@@ -322,10 +322,14 @@ const handleUpgrade = async (tier: 'pro' | 'business') => {
         </div>
 
         {/* Note */}
-<div className="glass-card p-4 border-l-[3px] border-l-emerald-500">
+<div className="glass-card p-4 border-l-[3px] border-l-emerald-500 space-y-2">
           <p className="text-xs text-neutral-600 dark:text-zinc-400 leading-relaxed">
             <strong className="text-neutral-900 dark:text-white">Secure payments by Razorpay.</strong>{' '}
-            Pay via UPI, Debit/Credit Card, or Net Banking. Cancel anytime from this page.
+            Pay via UPI, Debit/Credit Card, or Net Banking.
+          </p>
+          <p className="text-xs text-neutral-600 dark:text-zinc-400 leading-relaxed">
+            <strong className="text-neutral-900 dark:text-white">Cancel anytime.</strong>{' '}
+            Go to More → Subscription → Cancel. You keep full access until your paid period ends. No questions asked.
           </p>
         </div>
 
