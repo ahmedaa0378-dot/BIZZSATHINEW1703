@@ -124,7 +124,9 @@ export default function App() {
               ownerName: biz.owner_name,
               subscriptionTier: biz.subscription_tier || 'free',
               trialEndsAt: biz.trial_ends_at || null,
-              isAdminSuper: biz.is_super_admin || false,
+              subscriptionStatus: biz.subscription_status || null,
+              currentPeriodEnd: biz.current_period_end || null,
+              isSuperAdmin: biz.is_super_admin || false,
             });
             setOnboarded(true);
           }
